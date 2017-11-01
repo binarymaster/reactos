@@ -48,19 +48,6 @@ CBandSiteMenu::~CBandSiteMenu()
 
 HRESULT WINAPI CBandSiteMenu::FinalConstruct()
 {
-    HRESULT hr = SHGetFolderLocation(0, CSIDL_DESKTOP, NULL, 0, &m_DesktopPidl);
-    if (FAILED_UNEXPECTEDLY(hr))
-        return hr;
-
-    WCHAR buffer[MAX_PATH];
-    hr = SHGetFolderPathAndSubDirW(0, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, 0, L"Microsoft\\Internet Explorer\\Quick Launch", buffer);
-    if (FAILED_UNEXPECTEDLY(hr))
-        return hr;
-
-    m_QLaunchPidl.Attach(ILCreateFromPathW(buffer));
-    if (m_QLaunchPidl == NULL)
-        return E_FAIL;
-
     return S_OK;
 }
 
@@ -155,6 +142,31 @@ HRESULT CBandSiteMenu::_CreateBuiltInISFBand(UINT uID, REFIID riid, void** ppv)
     LPITEMIDLIST pidl;
     HRESULT hr;
 
+    switch (uID)
+    {
+        case IDM_TASKBAR_TOOLBARS_DESKTOP:
+            if (m_DesktopPidl != NULL)
+                ILFree(m_DesktopPidl);
+
+            hr = SHGetFolderLocation(0, CSIDL_DESKTOP, NULL, 0, &m_DesktopPidl);
+            if (FAILED_UNEXPECTEDLY(hr))
+                return hr;
+            break;
+
+        case IDM_TASKBAR_TOOLBARS_QUICKLAUNCH:
+            if (m_QLaunchPidl != NULL)
+                ILFree(m_QLaunchPidl);
+
+            WCHAR buffer[MAX_PATH];
+            hr = SHGetFolderPathAndSubDirW(0, CSIDL_APPDATA, NULL, 0, L"Microsoft\\Internet Explorer\\Quick Launch", buffer);
+            if (FAILED_UNEXPECTEDLY(hr))
+                return hr;
+
+            m_QLaunchPidl.Attach(ILCreateFromPathW(buffer));
+            if (m_QLaunchPidl == NULL)
+                return E_FAIL;
+            break;
+    }
     pidl = (uID == IDM_TASKBAR_TOOLBARS_DESKTOP) ? m_DesktopPidl : m_QLaunchPidl;
 
     CComPtr<IShellFolderBand> pISFB;
