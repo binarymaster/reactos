@@ -1166,6 +1166,53 @@ SetDesktopBackColor(HWND hwndDlg, PBACKGROUND_DATA pData)
     RegCloseKey(hKey);
 }
 
+static VOID
+OnCustomButton(HWND hwndDlg, PBACKGROUND_DATA pData)
+{
+    TCHAR szCaption[128] = {0};
+    HPROPSHEETPAGE hpsp[1] = {0};
+    PROPSHEETHEADER psh;
+    HPROPSHEETPAGE hPage;
+    PROPSHEETPAGE psp;
+
+    LoadString(hApplet, IDS_DESKTOP_ITEMS, szCaption, sizeof(szCaption) / sizeof(TCHAR));
+
+    ZeroMemory(&psh, sizeof(PROPSHEETHEADER));
+    psh.dwSize = sizeof(PROPSHEETHEADER);
+    psh.dwFlags = PSH_NOAPPLYNOW;
+    psh.hwndParent = GetParent(hwndDlg);
+    psh.hInstance = hApplet;
+    psh.pszCaption = szCaption;
+    psh.phpage = hpsp;
+
+    if (psh.nPages < 1)
+    {
+        ZeroMemory(&psp, sizeof(psp));
+        psp.dwSize = sizeof(psp);
+        psp.dwFlags = PSP_DEFAULT;
+        psp.hInstance = hApplet;
+        psp.pszTemplate = MAKEINTRESOURCE(IDD_DESKTOP_GENERAL);
+        psp.pfnDlgProc = AdvGeneralPageProc;
+        psp.lParam = (LPARAM)NULL;
+
+        hPage = CreatePropertySheetPage(&psp);
+        if (hPage != NULL)
+        {
+            hpsp[0] = hPage;
+            psh.nPages++;
+        }
+        else
+            return;
+    }
+
+    if (PropertySheet(&psh) >= 1)
+    {
+        PropSheet_Changed(GetParent(hwndDlg), hwndDlg);
+    }
+    return;
+}
+
+
 INT_PTR CALLBACK
 BackgroundPageProc(HWND hwndDlg,
                    UINT uMsg,
@@ -1216,6 +1263,11 @@ BackgroundPageProc(HWND hwndDlg,
 
                             PropSheet_Changed(GetParent(hwndDlg), hwndDlg);
                         }
+                        break;
+
+                    case IDC_DESKTOP_CUSTOM:
+                        if (command == BN_CLICKED)
+                            OnCustomButton(hwndDlg, pData);
                         break;
                 }
             } break;
