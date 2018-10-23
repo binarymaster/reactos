@@ -1192,7 +1192,7 @@ OnCustomButton(HWND hwndDlg, PBACKGROUND_DATA pData)
         psp.dwFlags = PSP_DEFAULT;
         psp.hInstance = hApplet;
         psp.pszTemplate = MAKEINTRESOURCE(IDD_DESKTOP_GENERAL);
-        psp.pfnDlgProc = AdvGeneralPageProc;
+        psp.pfnDlgProc = DesktopPageProc;
         psp.lParam = (LPARAM)NULL;
 
         hPage = CreatePropertySheetPage(&psp);
