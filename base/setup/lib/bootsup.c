@@ -82,7 +82,7 @@ CreateFreeLoaderReactOSEntries(
     /* ReactOS_Debug */
     // BootEntry->BootEntryKey = MAKESTRKEY(L"ReactOS_Debug");
     BootEntry->FriendlyName = L"\"ReactOS (Debug)\"";
-    Options->OsLoadOptions  = L"/DEBUG /DEBUGPORT=COM1 /BAUDRATE=115200 /SOS";
+    Options->OsLoadOptions  = L"/DEBUG /DEBUGPORT=COM1 /BAUDRATE=115200 /SOS /FIRSTCHANCE";
     AddBootStoreEntry(BootStoreHandle, BootEntry, MAKESTRKEY(L"ReactOS_Debug"));
 
 #ifdef _WINKD_
@@ -97,7 +97,7 @@ CreateFreeLoaderReactOSEntries(
     /* ReactOS_KdSerial */
     // BootEntry->BootEntryKey = MAKESTRKEY(L"ReactOS_KdSerial");
     BootEntry->FriendlyName = L"\"ReactOS (RosDbg)\"";
-    Options->OsLoadOptions  = L"/DEBUG /DEBUGPORT=COM1 /BAUDRATE=115200 /SOS /KDSERIAL";
+    Options->OsLoadOptions  = L"/DEBUG /DEBUGPORT=COM1 /BAUDRATE=115200 /SOS /KDSERIAL /FIRSTCHANCE";
     AddBootStoreEntry(BootStoreHandle, BootEntry, MAKESTRKEY(L"ReactOS_KdSerial"));
 #endif
 
@@ -139,7 +139,7 @@ CreateFreeLoaderReactOSEntries(
 #endif
     {
 #if DBG
-        BootOptions.NextBootEntryKey = MAKESTRKEY(L"ReactOS_Debug");
+        BootOptions.NextBootEntryKey = MAKESTRKEY(L"ReactOS_KdSerial");
 #else
         BootOptions.NextBootEntryKey = MAKESTRKEY(L"ReactOS");
 #endif
@@ -156,7 +156,7 @@ CreateFreeLoaderReactOSEntries(
     else
     {
         /* Timeout=10 */
-        BootOptions.Timeout = 10;
+        BootOptions.Timeout = 1;
     }
 #endif
 
