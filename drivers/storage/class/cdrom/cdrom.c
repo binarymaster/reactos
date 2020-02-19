@@ -561,7 +561,7 @@ Return Value:
     PSCSI_INQUIRY_DATA lunInfo;
     PSCSI_ADAPTER_BUS_INFO  adapterInfo;
     PINQUIRYDATA inquiryData;
-    ULONG scsiBus;
+    ULONG scsiBus, cnter;
     NTSTATUS status;
     BOOLEAN foundDevice = FALSE;
 
@@ -604,6 +604,7 @@ Return Value:
         // Get the SCSI bus scan data for this bus.
         //
 
+        cnter = 0;
         lunInfo = (PVOID) (buffer + adapterInfo->BusData[scsiBus].InquiryDataOffset);
 
         //
@@ -613,6 +614,9 @@ Return Value:
         while (adapterInfo->BusData[scsiBus].InquiryDataOffset) {
 
             inquiryData = (PVOID)lunInfo->InquiryData;
+
+            if (cnter++ == 1 && inquiryData->DeviceType == 0)
+                inquiryData->DeviceType = READ_ONLY_DIRECT_ACCESS_DEVICE;
 
             if ((inquiryData->DeviceType == READ_ONLY_DIRECT_ACCESS_DEVICE) &&
                 (inquiryData->DeviceTypeQualifier == 0) &&

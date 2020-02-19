@@ -9496,7 +9496,8 @@ reject_srb:
 #endif //NAVO_TEST
 
                 if(atapiDev &&
-                   (Srb->Cdb[0] != SCSIOP_ATA_PASSTHROUGH)/* &&
+                   (Srb->Cdb[0] != SCSIOP_ATA_PASSTHROUGH) &&
+                   (Srb->Cdb[0] != SCSIOP_INQUIRY)/* &&
                    (Srb->Cdb[0] != SCSIOP_REPORT_LUNS)*/) {
                     KdPrint3((PRINT_PREFIX "Try ATAPI send %x\n", Srb->Cdb[0]));
                     status = AtapiSendCommand(HwDeviceExtension, Srb, CMD_ACTION_ALL);
