@@ -35,6 +35,7 @@
 #define kbd_read_input()        READ_PORT_UCHAR((PUCHAR)KBD_DATA_REG)
 #define kbd_read_status()       READ_PORT_UCHAR((PUCHAR)KBD_STATUS_REG)
 
+#if 0
 static unsigned char keyb_layout[2][128] =
 {
     "\000\0331234567890-=\177\t"                                        /* 0x00 - 0x0f */
@@ -53,6 +54,7 @@ static unsigned char keyb_layout[2][128] =
     "230\177\000\000\213\214\000\000\000\000\000\000\000\000\000\000"   /* 0x50 - 0x5f */
     "\r\000/"                                                           /* 0x60 - 0x6f */
 };
+#endif
 
 typedef UCHAR byte_t;
 
@@ -61,6 +63,7 @@ typedef UCHAR byte_t;
 static VOID
 KbdSendCommandToMouse(UCHAR Command)
 {
+#if 0
     ULONG Retry = 20000;
 
     while (kbd_read_status() & KBD_STAT_OBF && Retry--)
@@ -87,6 +90,7 @@ KbdSendCommandToMouse(UCHAR Command)
 
     if (kbd_read_input() != MOUSE_ACK) { ; }
 
+#endif
     return;
 }
 
@@ -103,6 +107,7 @@ VOID KbdDisableMouse(VOID)
 CHAR
 KdbpTryGetCharKeyboard(PULONG ScanCode, ULONG Retry)
 {
+#if 0
     static byte_t last_key = 0;
     static byte_t shift = 0;
     char c;
@@ -141,6 +146,7 @@ KdbpTryGetCharKeyboard(PULONG ScanCode, ULONG Retry)
         }
     }
 
+#endif
     return -1;
 }
 
