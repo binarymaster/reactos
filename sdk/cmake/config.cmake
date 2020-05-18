@@ -1,5 +1,5 @@
 
-set(SARCH "pc" CACHE STRING
+set(SARCH "xbox" CACHE STRING
 "Sub-architecture to build for. Specify one of:
  pc pc98 xbox")
 
