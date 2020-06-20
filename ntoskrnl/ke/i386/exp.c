@@ -1107,7 +1107,10 @@ KiDispatchExceptionFromTrapFrame(IN NTSTATUS Code,
                                  IN PKTRAP_FRAME TrapFrame)
 {
     EXCEPTION_RECORD ExceptionRecord;
+    // static ULONG Cnt = 0;
 
+    // if (Cnt++ > 30)
+    {
     /* Build the exception record */
     ExceptionRecord.ExceptionCode = Code;
     ExceptionRecord.ExceptionFlags = Flags;
@@ -1129,6 +1132,7 @@ KiDispatchExceptionFromTrapFrame(IN NTSTATUS Code,
                         TrapFrame->EFlags & EFLAGS_V86_MASK ?
                         -1 : KiUserTrap(TrapFrame),
                         TRUE);
+    }
 
     /* Return from this trap */
     KiEoiHelper(TrapFrame);
