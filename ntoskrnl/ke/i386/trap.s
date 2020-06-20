@@ -59,6 +59,7 @@ idt _KiTrap0F,         INT_32_DPL0  /* INT 12: Machine Check Exception (#MC)*/
 idt _KiTrap0F,         INT_32_DPL0  /* INT 13: SIMD FPU Exception (#XF)     */
 REPEAT 21
 idt _KiTrap0F,         INT_32_DPL0  /* INT 14-28: UNDEFINED INTERRUPTS      */
+// idt _KiTrap01,         INT_32_DPL0  /* INT 14-28: UNDEFINED INTERRUPTS      */
 ENDR
 idt _KiRaiseSecurityCheckFailure, INT_32_DPL3
                                     /* INT 29: Handler for __fastfail       */
