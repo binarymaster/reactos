@@ -400,7 +400,7 @@ ArbInitializeArbiterInstance(
         return STATUS_SUCCESS;
     }
 
-    DPRINT1("ArbInitializeArbiterInstance: Status %X\n", Status);
+    DPRINT("ArbInitializeArbiterInstance: Status %X\n", Status);
 
     return Status;
 }
