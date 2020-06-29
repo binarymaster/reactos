@@ -571,7 +571,7 @@ HvHiveWillShrink(
     _In_ PHHIVE RegistryHive)
 {
     /* No shrinking yet */
-    UNIMPLEMENTED_ONCE;
+    // UNIMPLEMENTED_ONCE;
     return FALSE;
 }
 

@@ -182,7 +182,7 @@ ScmLogEvent(DWORD dwEventId,
                                 L"Service Control Manager");
     if (hLog == NULL)
     {
-        DPRINT1("ScmLogEvent: RegisterEventSourceW failed %lu\n", GetLastError());
+        // DPRINT1("ScmLogEvent: RegisterEventSourceW failed %lu\n", GetLastError());
         return;
     }
 
