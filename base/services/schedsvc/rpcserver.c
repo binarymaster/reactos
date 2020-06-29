@@ -59,7 +59,7 @@ RpcThreadRoutine(
     Status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, FALSE);
     if (Status != RPC_S_OK)
     {
-        ERR("RpcServerListen() failed (Status %lx)\n", Status);
+        // ERR("RpcServerListen() failed (Status %lx)\n", Status);
     }
 
     return 0;

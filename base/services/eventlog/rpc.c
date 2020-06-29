@@ -98,7 +98,7 @@ ElfCreateEventLogHandle(PLOGHANDLE* LogHandle,
     LogsActive = LogfListItemCount();
     if (LogsActive == 0)
     {
-        DPRINT1("EventLog service reports no log files!\n");
+        // DPRINT1("EventLog service reports no log files!\n");
         Status = STATUS_UNSUCCESSFUL;
         goto Done;
     }

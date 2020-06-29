@@ -168,7 +168,7 @@ SetTime(VOID)
     WCHAR szData[MAX_VALUE_NAME] = L"";
     DWORD cbName = sizeof(szData);
 
-    DPRINT("Entered SetTime.\n");
+    // DPRINT("Entered SetTime.\n");
 
     lRet = RegOpenKeyExW(HKEY_LOCAL_MACHINE,
                          L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DateTime\\Servers",
@@ -189,7 +189,7 @@ SetTime(VOID)
 
     RegCloseKey(hKey);
 
-    DPRINT("Time Server is '%S'.\n", szData);
+    // DPRINT("Time Server is '%S'.\n", szData);
 
     /* Is the given string empty? */
     if (cbName == 0 || szData[0] == '\0')
