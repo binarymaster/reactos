@@ -137,7 +137,7 @@ SVCCTL_HANDLEW_unbind(SVCCTL_HANDLEW szMachineName,
     status = RpcBindingFree(&hBinding);
     if (status != RPC_S_OK)
     {
-        ERR("RpcBindingFree returned 0x%x\n", status);
+        // ERR("RpcBindingFree returned 0x%x\n", status);
     }
 }
 

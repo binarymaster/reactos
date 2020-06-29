@@ -26,7 +26,7 @@ HvpWriteLog(
 
     if (PrintCount++ == 0)
     {
-        UNIMPLEMENTED;
+        // UNIMPLEMENTED;
     }
     return TRUE;
 
@@ -277,7 +277,7 @@ CMAPI
 HvHiveWillShrink(IN PHHIVE RegistryHive)
 {
     /* No shrinking yet */
-    UNIMPLEMENTED_ONCE;
+    // UNIMPLEMENTED_ONCE;
     return FALSE;
 }
 

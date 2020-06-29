@@ -35,7 +35,7 @@ ArbInitializeArbiterInstance(
     NTSTATUS Status;
 
     DPRINT("ArbInitializeArbiterInstance: Initializing %S Arbiter\n", ArbiterName);
-    UNIMPLEMENTED;
+    // UNIMPLEMENTED;
 
     Status = STATUS_SUCCESS;
     return Status;
