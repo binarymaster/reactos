@@ -18,6 +18,7 @@ list(APPEND INF_FILES
     machine.inf
     monitor.inf
     msmouse.inf
+    multiprt.inf
     NET_NIC.inf
     nettcpip.inf
     ports.inf

@@ -19,6 +19,7 @@ legcydrv.inf
 machine.inf
 monitor.inf
 msmouse.inf
+multiprt.inf
 NET_NIC.inf
 ports.inf
 scsi.inf

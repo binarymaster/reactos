@@ -1,0 +1,50 @@
+; MULTIPRT.INF
+
+; Installation of multi-port serial adapters
+
+[Version]
+Signature  = "$Windows NT$"
+;Signature  = "$ReactOS$"
+LayoutFile = layout.inf
+Class      = MultiPortSerial
+ClassGuid  = {50906CB8-BA12-11D1-BF5D-0000F805F530}
+Provider   = %ReactOS%
+DriverVer  = 08/22/2020,1.00
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[ClassInstall32.NT]
+AddReg = MultiPortSerialClass.NT.AddReg
+
+[MultiPortSerialClass.NT.AddReg]
+HKR, , ,               0, %MultiPortSerialClassName%
+HKR, , Icon,           0, "-26"
+
+[Manufacturer]
+%SmscMfg% = SmscMfg
+
+[SmscMfg]
+%XBOX_HAL\LpcSuperIO.DeviceDesc% = NO_DRV,XBOX_HAL\LpcSuperIO
+
+;---------------------------- NO DRIVER REQ -----------------------------
+
+[NO_DRV]
+
+[NO_DRV.Services]
+AddService = , 0x00000002
+
+;-------------------------------- STRINGS -------------------------------
+
+[Strings]
+ReactOS = "ReactOS Team"
+MultiPortSerialClassName = "Multi-port serial adapters"
+
+SmscMfg = "Standard Microsystems Corporation"
+XBOX_HAL\LpcSuperIO.DeviceDesc = "SMSC LPC47M157 Super I/O Controller"
+
+[Strings.0419]
+ReactOS = "Команда ReactOS"
+MultiPortSerialClassName = "Многопортовые последовательные адаптеры"
+
+XBOX_HAL\LpcSuperIO.DeviceDesc = "SMSC LPC47M157 контроллер Super I/O"

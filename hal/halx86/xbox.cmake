@@ -36,6 +36,7 @@ list(APPEND HAL_XBOX_SOURCE
     xbox/part_xbox.c
     xbox/halinit_xbox.c
     xbox/reboot.c
+    xbox/pdo.c
     up/irql.c
     up/pic.c)
 

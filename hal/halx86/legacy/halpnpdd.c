@@ -44,6 +44,47 @@ typedef struct _PDO_EXTENSION
     LONG InterfaceReferenceCount;
 } PDO_EXTENSION, *PPDO_EXTENSION;
 
+#if defined(SARCH_XBOX)
+extern
+VOID
+NTAPI
+HalpXboxReportDetectedDevices(
+    IN PDRIVER_OBJECT DriverObject,
+    IN PVOID Context,
+    IN ULONG Count);
+
+extern
+NTSTATUS
+NTAPI
+HalpXboxQueryResources(
+    IN PDEVICE_OBJECT DeviceObject,
+    OUT PCM_RESOURCE_LIST *Resources);
+
+extern
+NTSTATUS
+NTAPI
+HalpXboxQueryResourceRequirements(
+    IN PDEVICE_OBJECT DeviceObject,
+    OUT PIO_RESOURCE_REQUIREMENTS_LIST *Requirements);
+
+extern
+NTSTATUS
+NTAPI
+HalpXboxQueryIdPdo(
+    IN PDEVICE_OBJECT DeviceObject,
+    IN BUS_QUERY_ID_TYPE IdType,
+    IN OUT PVOID Id,
+    IN OUT PULONG Length);
+
+extern
+NTSTATUS
+NTAPI
+HalpXboxQueryDeviceTextPdo(
+    IN PDEVICE_OBJECT DeviceObject,
+    IN PIRP Irp,
+    IN PIO_STACK_LOCATION IrpSp);
+#endif
+
 /* GLOBALS ********************************************************************/
 
 PDRIVER_OBJECT HalpDriverObject;
@@ -129,6 +170,11 @@ HalpAddDevice(IN PDRIVER_OBJECT DriverObject,
 
     /* Initialization is finished */
     PdoDeviceObject->Flags &= ~DO_DEVICE_INITIALIZING;
+
+#if defined(SARCH_XBOX)
+    /* Report detected Xbox devices for Plug-n-Play */
+    HalpXboxReportDetectedDevices(DriverObject, FdoExtension, 0);
+#endif
 
     /* Return status */
     DPRINT("Device added %lx\n", Status);
@@ -414,6 +460,9 @@ HalpQueryResources(IN PDEVICE_OBJECT DeviceObject,
     }
     else
     {
+#if defined(SARCH_XBOX)
+        return HalpXboxQueryResources(DeviceObject, Resources);
+#endif
         /* This shouldn't happen */
         return STATUS_UNSUCCESSFUL;
     }
@@ -441,6 +490,9 @@ HalpQueryResourceRequirements(IN PDEVICE_OBJECT DeviceObject,
     }
     else
     {
+#if defined(SARCH_XBOX)
+        return HalpXboxQueryResourceRequirements(DeviceObject, Requirements);
+#endif
         /* This shouldn't happen */
         return STATUS_UNSUCCESSFUL;
     }
@@ -455,7 +507,7 @@ HalpQueryIdPdo(IN PDEVICE_OBJECT DeviceObject,
     PPDO_EXTENSION PdoExtension;
     PDO_TYPE PdoType;
     PWCHAR CurrentId;
-    WCHAR Id[100];
+    WCHAR Id[200];
     NTSTATUS Status;
     ULONG Length = 0;
     PWCHAR Buffer;
@@ -498,24 +550,45 @@ HalpQueryIdPdo(IN PDEVICE_OBJECT DeviceObject,
 #endif
             else
             {
+#if defined(SARCH_XBOX)
+                Status = HalpXboxQueryIdPdo(DeviceObject, IdType, &Id, &Length);
+
+                if (!NT_SUCCESS(Status))
+                    return Status;
+#else
                 /* Unknown */
                 return STATUS_NOT_SUPPORTED;
+#endif
             }
             break;
 
         case BusQueryInstanceID:
 
+#if defined(SARCH_XBOX)
+            Status = HalpXboxQueryIdPdo(DeviceObject, IdType, &Id, &Length);
+
+            if (!NT_SUCCESS(Status))
+                return Status;
+#else
             /* Instance ID */
             CurrentId = L"0";
             RtlCopyMemory(Id, CurrentId, (wcslen(CurrentId) * sizeof(WCHAR)) + sizeof(UNICODE_NULL));
             Length += (wcslen(CurrentId) * sizeof(WCHAR)) + sizeof(UNICODE_NULL);
+#endif
             break;
 
         case BusQueryCompatibleIDs:
         default:
 
+#if defined(SARCH_XBOX)
+            Status = HalpXboxQueryIdPdo(DeviceObject, IdType, &Id, &Length);
+
+            if (!NT_SUCCESS(Status))
+                return Status;
+#else
             /* We don't support anything else */
             return STATUS_NOT_SUPPORTED;
+#endif
     }
 
     /* Allocate the buffer */
@@ -771,9 +844,16 @@ HalpDispatchPnp(IN PDEVICE_OBJECT DeviceObject,
 
             case IRP_MN_QUERY_DEVICE_TEXT:
 
+#if defined(SARCH_XBOX)
+                Status = HalpXboxQueryDeviceTextPdo(DeviceObject, Irp, IoStackLocation);
+
+                if (!NT_SUCCESS(Status))
+                    Status = Irp->IoStatus.Status;
+#else
                 /* Inherit whatever status we had */
                 DPRINT("Query text for the PDO\n");
                 Status = Irp->IoStatus.Status;
+#endif
                 break;
 
             case IRP_MN_FILTER_RESOURCE_REQUIREMENTS:
