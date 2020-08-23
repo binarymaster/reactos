@@ -125,7 +125,7 @@ DriverEntry(IN PDRIVER_OBJECT DriverObject,
     ULONG i;
 
     DPRINT("Parport DriverEntry\n");
-
+return -1;
     DriverObject->DriverUnload = DriverUnload;
     DriverObject->DriverExtension->AddDevice = AddDevice;
 

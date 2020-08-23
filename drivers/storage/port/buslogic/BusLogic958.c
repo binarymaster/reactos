@@ -103,7 +103,7 @@ DriverEntry(IN PVOID DriverObject,
     UCHAR DeviceId[4] = { '1', '0', '4', '0'        };
 
     DebugPrint((TRACE,"\n BusLogic -  Inside the DriverEntry function \n"));
-
+return -1;
     // Zero out structure.
     for (i = 0; i < sizeof(HW_INITIALIZATION_DATA); i++)
     {
