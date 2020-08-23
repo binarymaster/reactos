@@ -105,6 +105,11 @@ function(add_user_profile_dirs _image_filelist _rootdir _username)
     file(APPEND ${_image_filelist} "${_rootdir}/${_username}/Templates=${CMAKE_CURRENT_BINARY_DIR}/empty\n")
 endfunction()
 
+function(add_ramcd_dirs _image_filelist)
+    file(APPEND ${_image_filelist} "/rosload.exe=${CMAKE_CURRENT_BINARY_DIR}/freeldr/freeldr/rosload.exe\n")
+    file(APPEND ${_image_filelist} "/freeldr.ini=${CMAKE_CURRENT_SOURCE_DIR}/bootdata/ramcd_pc98.ini\n")
+    file(APPEND ${_image_filelist} "/livecd.iso=${CMAKE_BINARY_DIR}/livecd.iso\n")
+endfunction()
 
 ## BootCD
 # Create the file list
@@ -148,6 +153,11 @@ file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/livecd.cmake.lst "reactos/TEMP=${CMAKE_C
 add_allusers_profile_dirs(${CMAKE_CURRENT_BINARY_DIR}/livecd.cmake.lst "Profiles")
 add_user_profile_dirs(${CMAKE_CURRENT_BINARY_DIR}/livecd.cmake.lst "Profiles" "Default User")
 
+## RamCD
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ramcd.cmake.lst "")
+add_ramcd_dirs(${CMAKE_CURRENT_BINARY_DIR}/ramcd.cmake.lst)
+file(MAKE_DIRECTORY ${REACTOS_BINARY_DIR}/RAM)
+
 add_custom_target(livecd
     COMMAND native-mkisofs -quiet -o ${REACTOS_BINARY_DIR}/livecd.iso -iso-level 4
         -publisher ${ISO_MANUFACTURER} -preparer ${ISO_MANUFACTURER} -volid ${ISO_VOLNAME} -volset ${ISO_VOLNAME}
@@ -155,6 +165,7 @@ add_custom_target(livecd
         -sort ${CMAKE_CURRENT_BINARY_DIR}/bootfiles.sort
         -no-cache-inodes -graft-points -path-list ${CMAKE_CURRENT_BINARY_DIR}/livecd.$<CONFIG>.lst
     COMMAND native-isohybrid -b ${_isombr_file} -t 0x96 ${REACTOS_BINARY_DIR}/livecd.iso
+    COMMAND native-mkisofs -R -J -quiet -o ${REACTOS_BINARY_DIR}/RAM/ramcd.iso -no-cache-inodes -graft-points -path-list ${CMAKE_CURRENT_BINARY_DIR}/ramcd.cmake.lst
     DEPENDS isombr native-isohybrid native-mkisofs
     VERBATIM)
 
