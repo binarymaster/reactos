@@ -864,7 +864,7 @@ DriverEntry(
     IN PUNICODE_STRING RegistryPath)
 {
     DPRINT("%s(%p, %wZ)\n", __FUNCTION__, DriverObject, RegistryPath);
-
+return -1;
     DriverObject->MajorFunction[IRP_MJ_CREATE] = IsaCreateClose;
     DriverObject->MajorFunction[IRP_MJ_CLOSE] = IsaCreateClose;
     DriverObject->MajorFunction[IRP_MJ_READ] = IsaReadWrite;
