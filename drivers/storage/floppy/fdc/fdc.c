@@ -180,7 +180,7 @@ DriverEntry(IN PDRIVER_OBJECT DriverObject,
             IN PUNICODE_STRING RegistryPath)
 {
     DPRINT("FDC: DriverEntry()\n");
-
+return -1;
     DriverObject->MajorFunction[IRP_MJ_CREATE] = FdcCreate;
     DriverObject->MajorFunction[IRP_MJ_CLOSE] = FdcClose;
 //    DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = FdcDeviceControl;
