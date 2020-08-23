@@ -485,7 +485,7 @@ DriverEntry(
 {
 	PI8042_DRIVER_EXTENSION DriverExtension;
 	NTSTATUS Status;
-
+return -1;
 	Status = IoAllocateDriverObjectExtension(
 		DriverObject,
 		DriverObject,

@@ -27,7 +27,7 @@ DriverEntry(
 	IN PUNICODE_STRING RegPath)
 {
 	ULONG i;
-
+return -1;
 	DriverObject->DriverUnload = DriverUnload;
 	DriverObject->DriverExtension->AddDevice = SerialAddDevice;
 
