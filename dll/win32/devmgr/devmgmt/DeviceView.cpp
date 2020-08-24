@@ -39,7 +39,7 @@ CDeviceView::CDeviceView(
     m_hTreeView(NULL),
     m_hPropertyDialog(NULL),
     m_hMenu(NULL),
-    m_ViewType(DevicesByType),
+    m_ViewType(DevicesByConnection),
     m_ShowHidden(false),
     m_RootNode(NULL)
 {
