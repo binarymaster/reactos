@@ -130,6 +130,7 @@ PropSheetProc(HWND hwndDlg, UINT uMsg, LPARAM lParam)
         {
             hIcon = LoadIconW(hApplet, MAKEINTRESOURCEW(IDI_CPLSYSTEM));
             SendMessageW(hwndDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+            MoveWindow(hwndDlg, 320, 0, 600, 600, TRUE);
             break;
         }
     }
