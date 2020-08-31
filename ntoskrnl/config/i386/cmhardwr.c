@@ -228,10 +228,11 @@ Match:
 
 VOID
 NTAPI
-CmpGetIntelBrandString(OUT PCHAR CpuString)
+CmpGetIntelBrandString(IN PKPRCB Prcb, OUT PCHAR CpuString)
 {
     CPU_INFO CpuInfo;
     ULONG BrandId, Signature;
+    PCHAR CpuStr = NULL;
 
     /* Get the Brand Id */
     KiCpuId(&CpuInfo, 0x00000001);
@@ -300,7 +301,38 @@ CmpGetIntelBrandString(OUT PCHAR CpuString)
             strcpy(CpuString, "Intel(R) Pentium(R) M processor");
             break;
         default:
-            strcpy(CpuString, "Unknown Intel processor");
+            if (Prcb->CpuType == 6)
+            {
+                /* Get cache information */
+                ULONG L2_KB = KeGetPcr()->SecondLevelCacheSize / 1024;
+
+                switch (Prcb->CpuStep >> 8)
+                {
+                    case 5:
+                        if (L2_KB == 0)
+                            CpuStr = "Celeron (Covington)";
+                        else if (L2_KB == 256)
+                            CpuStr = "Mobile Pentium II (Dixon)";
+                        break;
+
+                    case 6:
+                        if (L2_KB == 128)
+                            CpuStr = "Celeron (Mendocino)";
+                        else if ((Prcb->CpuStep & 0xff) == 0 || (Prcb->CpuStep & 0xff) == 5)
+                            CpuStr = "Celeron-A";
+                        break;
+
+                    case 8:
+                        if (L2_KB == 128)
+                            CpuStr = "Celeron (Coppermine)";
+                        break;
+                }
+            }
+
+            if (CpuStr)
+                sprintf(CpuString, "Intel(R) %s", CpuStr);
+            else
+                strcpy(CpuString, "Unknown Intel processor");
     }
 }
 
@@ -469,6 +501,7 @@ CmpInitializeMachineDependentConfiguration(IN PLOADER_PARAMETER_BLOCK LoaderBloc
                         (Prcb->CpuStep >> 8),
                         Prcb->CpuStep & 0xff);
             }
+            DPRINT1("CPU ID: %s\n", Buffer);
 
             /* Save the ID string length now that we've created it */
             ConfigData.ComponentEntry.IdentifierLength = (ULONG)strlen(Buffer) + 1;
@@ -564,7 +597,7 @@ CmpInitializeMachineDependentConfiguration(IN PLOADER_PARAMETER_BLOCK LoaderBloc
                         switch (VendorId)
                         {
                             case 'uneG': /* Intel */
-                                CmpGetIntelBrandString(PartialString);
+                                CmpGetIntelBrandString(Prcb, PartialString);
                                 break;
                             case 'htuA': /* AMD */
                                 /* FIXME */
