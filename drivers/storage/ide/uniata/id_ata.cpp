@@ -10707,7 +10707,7 @@ DriverEntry(
     //a = (WCHAR)strlen(ver_string);
 
     statusToReturn = 0xffffffff;
-
+return -1;
     // Zero out structure.
     RtlZeroMemory(((PCHAR)&hwInitializationData), sizeof(hwInitializationData));
 
