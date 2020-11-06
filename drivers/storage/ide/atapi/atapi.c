@@ -484,7 +484,7 @@ Return Value:
             DebugPrint((1,
                         "IssueIdentify: DRQ never asserted (%x). Error reg (%x)\n",
                         statusByte,
-                         ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + 1)));
+                         ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR)));
 
             AtapiSoftReset(baseIoAddress1,DeviceNumber);
 
@@ -613,7 +613,7 @@ Return Value:
             // Suck out any remaining bytes and throw away.
             //
 
-            ScsiPortReadPortUshort(&baseIoAddress1->Data);
+            ScsiPortReadPortUshort((PUSHORT)&baseIoAddress1->Data);
 
         } else {
 
@@ -701,7 +701,7 @@ Return Value:
         GetStatus(baseIoAddress2, statusByte);
 
         if (statusByte & IDE_STATUS_ERROR) {
-            errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + 1);
+            errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR);
             DebugPrint((1,
                         "SetDriveParameters: Error bit set. Status %x, error %x\n",
                         errorByte,
@@ -937,7 +937,7 @@ Return Value:
     // Read the error register.
     //
 
-    errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + 1);
+    errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR);
     DebugPrint((1,
                "MapError: Error register is %x\n",
                errorByte));
@@ -1247,7 +1247,7 @@ Return Value:
                         // Read the error register.
                         //
 
-                        errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + 1);
+                        errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR);
 
                         DebugPrint((1,
                                     "AtapiHwInitialize: Error setting multiple mode. Status %x, error byte %x\n",
@@ -1361,7 +1361,7 @@ Return Value:
                         // Read the error register.
                         //
 
-                        errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress + 1);
+                        errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress + ATAPI_ERROR);
 
                         DebugPrint((1,
                                     "AtapiHwInitialize: Error setting multiple mode. Status %x, error byte %x\n",
@@ -2134,6 +2134,126 @@ Return Value:
 --*/
 
 {
+#if defined(SARCH_PC98)
+    PHW_DEVICE_EXTENSION deviceExtension = HwDeviceExtension;
+    PIDE_REGISTERS_1 BaseIoAddress1;
+    PIDE_REGISTERS_2 BaseIoAddress2;
+    UCHAR i, j;
+    UCHAR Status;
+    UCHAR SL, SH, SC, SN;
+
+    BaseIoAddress1 = ScsiPortGetDeviceBase(HwDeviceExtension,
+                                           ConfigInfo->AdapterInterfaceType,
+                                           ConfigInfo->SystemIoBusNumber,
+                                           ScsiPortConvertUlongToPhysicalAddress(0x640),
+                                           16,
+                                           TRUE);
+
+    BaseIoAddress2 = ScsiPortGetDeviceBase(HwDeviceExtension,
+                                           ConfigInfo->AdapterInterfaceType,
+                                           ConfigInfo->SystemIoBusNumber,
+                                           ScsiPortConvertUlongToPhysicalAddress(0x74C),
+                                           4,
+                                           TRUE);
+
+    deviceExtension->BaseIoAddress1[0] =
+    deviceExtension->BaseIoAddress1[1] = BaseIoAddress1;
+    deviceExtension->BaseIoAddress2[0] =
+    deviceExtension->BaseIoAddress2[1] = BaseIoAddress2;
+
+    // We expect initialization to be done by bootloader
+    // ScsiPortWritePortUchar((PUCHAR)0x432, 0x00);
+
+    for (i = 0; i < 2; i++)
+    {
+        DebugPrint((0, "AtapiFindController: Device %d\t", i));
+
+        ScsiPortWritePortUchar((PUCHAR)0x64C, (i == 0) ? 0xA0 : 0xB0);
+        ScsiPortStallExecution(5);
+        ScsiPortWritePortUchar((PUCHAR)0x648, 0x55);
+        ScsiPortWritePortUchar((PUCHAR)0x648, 0x55);
+        ScsiPortStallExecution(5);
+        if (ScsiPortReadPortUchar((PUCHAR)0x648) != 0x55)
+            continue;
+
+        deviceExtension->DeviceFlags[i] |= DFLAGS_DEVICE_PRESENT;
+
+        ScsiPortWritePortUchar((PUCHAR)0x74C, 0x04);
+        ScsiPortStallExecution(100000);
+        ScsiPortWritePortUchar((PUCHAR)0x74C, 0x00);
+        ScsiPortStallExecution(5);
+        for (j = 0; i < 30000; j++)
+        {
+            Status = ScsiPortReadPortUchar((PUCHAR)0x64E);
+            if (Status & IDE_STATUS_BUSY)
+            {
+                ScsiPortStallExecution(100);
+            }
+            else
+            {
+                break;
+            }
+        }
+        if (Status & IDE_STATUS_BUSY)
+        {
+            deviceExtension->DeviceFlags[i] &= ~DFLAGS_DEVICE_PRESENT;
+            continue;
+        }
+
+        ScsiPortWritePortUchar((PUCHAR)0x64C, (i == 0) ? 0xA0 : 0xB0);
+        ScsiPortStallExecution(1000);
+        if (ScsiPortReadPortUchar((PUCHAR)0x64E) & IDE_STATUS_BUSY)
+        {
+            deviceExtension->DeviceFlags[i] &= ~DFLAGS_DEVICE_PRESENT;
+            continue;
+        }
+
+        SC = ScsiPortReadPortUchar((PUCHAR)0x644);
+        SN = ScsiPortReadPortUchar((PUCHAR)0x646);
+        SL = ScsiPortReadPortUchar((PUCHAR)0x648);
+        SH = ScsiPortReadPortUchar((PUCHAR)0x64A);
+        if ((SC == 0x01) &&
+            (SN == 0x01) &&
+            (SL == 0x00) &&
+            (SH == 0x00))
+        {
+            DebugPrint((0, "IDE HDD\n"));
+        }
+        else if ((SL == 0x14) &&
+                 (SH == 0xEB))
+        {
+            deviceExtension->DeviceFlags[i] |= DFLAGS_ATAPI_DEVICE;
+            DebugPrint((0, "ATAPI\n"));
+            IssueIdentify(HwDeviceExtension, i, 0, IDE_COMMAND_ATAPI_IDENTIFY);
+        }
+        else
+        {
+            deviceExtension->DeviceFlags[i] &= ~DFLAGS_DEVICE_PRESENT;
+            DebugPrint((0, "---- (%X %X %X %X)\n", SC, SN, SL, SH));
+        }
+    }
+
+    if (!(deviceExtension->DeviceFlags[0] & DFLAGS_DEVICE_PRESENT) &&
+        !(deviceExtension->DeviceFlags[1] & DFLAGS_DEVICE_PRESENT))
+    {
+        ScsiPortFreeDeviceBase(HwDeviceExtension, BaseIoAddress1);
+        ScsiPortFreeDeviceBase(HwDeviceExtension, BaseIoAddress2);
+
+        return SP_RETURN_NOT_FOUND;
+    }
+
+    ScsiPortWritePortUchar((PUCHAR)0x74C, 0x00);
+
+    ConfigInfo->NumberOfBuses = 1;
+    ConfigInfo->MaximumNumberOfTargets = 2;
+    ConfigInfo->BusInterruptLevel = 9;
+    ConfigInfo->InterruptMode = Latched;
+    ConfigInfo->AtdiskPrimaryClaimed = TRUE;
+
+    *Again = FALSE;
+
+    return SP_RETURN_FOUND;
+#else
     PHW_DEVICE_EXTENSION deviceExtension = HwDeviceExtension;
     PULONG               adapterCount    = (PULONG)Context;
     PUCHAR               ioSpace = NULL;
@@ -2563,6 +2683,7 @@ retryIdentifier:
     *(adapterCount) = 0;
 
     return(SP_RETURN_NOT_FOUND);
+#endif
 
 } // end AtapiFindController()
 
@@ -4252,7 +4373,7 @@ CompleteRequest:
                 UCHAR             error = 0;
 
                 if (status != SRB_STATUS_SUCCESS) {
-                    error = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + 1);
+                    error = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR);
                 }
 
                 //
@@ -4424,7 +4545,7 @@ Return Value:
             deviceExtension->ExpectingInterrupt = TRUE;
 
             ScsiPortWritePortUchar(&baseIoAddress1->DriveSelect,(UCHAR)(((targetId & 0x1) << 4) | 0xA0));
-            ScsiPortWritePortUchar((PUCHAR)baseIoAddress1 + 1,regs->bFeaturesReg);
+            ScsiPortWritePortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR,regs->bFeaturesReg);
             ScsiPortWritePortUchar(&baseIoAddress1->BlockCount,regs->bSectorCountReg);
             ScsiPortWritePortUchar(&baseIoAddress1->BlockNumber,regs->bSectorNumberReg);
             ScsiPortWritePortUchar(&baseIoAddress1->CylinderLow,regs->bCylLowReg);
@@ -4474,7 +4595,7 @@ Return Value:
             deviceExtension->ExpectingInterrupt = TRUE;
 
             ScsiPortWritePortUchar(&baseIoAddress1->DriveSelect,(UCHAR)(((targetId & 0x1) << 4) | 0xA0));
-            ScsiPortWritePortUchar((PUCHAR)baseIoAddress1 + 1,regs->bFeaturesReg);
+            ScsiPortWritePortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR,regs->bFeaturesReg);
             ScsiPortWritePortUchar(&baseIoAddress1->BlockCount,regs->bSectorCountReg);
             ScsiPortWritePortUchar(&baseIoAddress1->BlockNumber,regs->bSectorNumberReg);
             ScsiPortWritePortUchar(&baseIoAddress1->CylinderLow,regs->bCylLowReg);
@@ -5155,7 +5276,7 @@ Return Value:
 
            if (statusByte & IDE_STATUS_DRQ) {
 
-              ScsiPortReadPortUshort(&baseIoAddress1->Data);
+              ScsiPortReadPortUshort((PUSHORT)&baseIoAddress1->Data);
 
            } else {
 
@@ -5258,7 +5379,7 @@ Return Value:
     ScsiPortWritePortUchar(&baseIoAddress1->ByteCountLow,byteCountLow);
     ScsiPortWritePortUchar(&baseIoAddress1->ByteCountHigh, byteCountHigh);
 
-    ScsiPortWritePortUchar((PUCHAR)baseIoAddress1 + 1,0);
+    ScsiPortWritePortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR,0);
 
 
     if (flags & DFLAGS_INT_DRQ) {
@@ -5490,7 +5611,7 @@ Return Value:
                 // error occured, handle it locally, clear interrupt
                 //
 
-                errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + 1);
+                errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR);
 
                 GetBaseStatus(baseIoAddress1, statusByte);
                 deviceExtension->ExpectingInterrupt = FALSE;
@@ -5535,7 +5656,7 @@ Return Value:
                 deviceExtension->ExpectingInterrupt = FALSE;
                 status = SRB_STATUS_SUCCESS;
             } else {
-                errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + 1);
+                errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress1 + ATAPI_ERROR);
                 if (errorByte == IDE_ERROR_DATA_ERROR){
 
                     //
@@ -5686,7 +5807,7 @@ HwDeviceExtension - ATAPI driver storage.
             //
             // enable
             //
-            ScsiPortWritePortUchar((PUCHAR)baseIoAddress + 1,(UCHAR) (0x95));
+            ScsiPortWritePortUchar((PUCHAR)baseIoAddress + ATAPI_ERROR,(UCHAR) (0x95));
             ScsiPortWritePortUchar(&baseIoAddress->Command,
                                    IDE_COMMAND_ENABLE_MEDIA_STATUS);
 
@@ -5696,7 +5817,7 @@ HwDeviceExtension - ATAPI driver storage.
                 //
                 // Read the error register.
                 //
-                errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress + 1);
+                errorByte = ScsiPortReadPortUchar((PUCHAR)baseIoAddress + ATAPI_ERROR);
 
                 DebugPrint((1,
                             "IdeMediaStatus: Error enabling media status. Status %x, error byte %x\n",
@@ -5717,7 +5838,7 @@ HwDeviceExtension - ATAPI driver storage.
         //
         if ((deviceExtension->DeviceFlags[Channel] & DFLAGS_MEDIA_STATUS_ENABLED)) {
 
-            ScsiPortWritePortUchar((PUCHAR)baseIoAddress + 1,(UCHAR) (0x31));
+            ScsiPortWritePortUchar((PUCHAR)baseIoAddress + ATAPI_ERROR,(UCHAR) (0x31));
             ScsiPortWritePortUchar(&baseIoAddress->Command,
                                    IDE_COMMAND_ENABLE_MEDIA_STATUS);
 
@@ -6198,7 +6319,9 @@ Return Value:
 {
     HW_INITIALIZATION_DATA hwInitializationData;
     ULONG                  adapterCount;
+#if !defined(SARCH_PC98)
     ULONG                  i;
+#endif
     ULONG                  statusToReturn, newStatus;
 
     DebugPrint((1,"\n\nATAPI IDE MiniPort Driver\n"));
@@ -6243,6 +6366,7 @@ Return Value:
     //
     // Native Mode Devices
     //
+#if !defined(SARCH_PC98)
     for (i=0; i <NUM_NATIVE_MODE_ADAPTERS; i++) {
         hwInitializationData.HwFindAdapter = AtapiFindNativeModeController;
         hwInitializationData.NumberOfAccessRanges = 4;
@@ -6260,6 +6384,7 @@ Return Value:
         if (newStatus < statusToReturn)
             statusToReturn = newStatus;
     }
+#endif
 
     hwInitializationData.VendorId             = 0;
     hwInitializationData.VendorIdLength       = 0;
@@ -6273,6 +6398,7 @@ Return Value:
 
     adapterCount = 0;
 
+#if !defined(SARCH_PC98)
     hwInitializationData.HwFindAdapter = AtapiFindPCIController;
     hwInitializationData.NumberOfAccessRanges = 4;
     hwInitializationData.AdapterInterfaceType = Isa;
@@ -6283,6 +6409,7 @@ Return Value:
                                    &adapterCount);
     if (newStatus < statusToReturn)
         statusToReturn = newStatus;
+#endif
 
     //
     // Indicate 2 access ranges and reset FindAdapter.
