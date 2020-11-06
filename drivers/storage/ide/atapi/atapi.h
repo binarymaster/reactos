@@ -13,6 +13,37 @@
 // IDE register definition
 //
 
+#if defined(SARCH_PC98)
+#define ATAPI_ERROR    2
+typedef struct _IDE_REGISTERS_1 {
+    UCHAR Data;
+    UCHAR Gap0;
+    UCHAR BlockCount;
+    UCHAR Gap1;
+    UCHAR BlockNumber;
+    UCHAR Gap2;
+    UCHAR CylinderLow;
+    UCHAR Gap3;
+    UCHAR CylinderHigh;
+    UCHAR Gap4;
+    UCHAR DriveSelect;
+    UCHAR Gap5;
+    UCHAR Command;
+} IDE_REGISTERS_1, *PIDE_REGISTERS_1;
+
+typedef struct _IDE_REGISTERS_2 {
+    UCHAR AlternateStatus;
+    UCHAR Gap0;
+    UCHAR DriveAddress;
+} IDE_REGISTERS_2, *PIDE_REGISTERS_2;
+
+typedef struct _IDE_REGISTERS_3 {
+    ULONG Data;
+    UCHAR Gap0;
+    UCHAR Others[4];
+} IDE_REGISTERS_3, *PIDE_REGISTERS_3;
+#else
+#define ATAPI_ERROR    1
 typedef struct _IDE_REGISTERS_1 {
     USHORT Data;
     UCHAR BlockCount;
@@ -32,6 +63,7 @@ typedef struct _IDE_REGISTERS_3 {
     ULONG Data;
     UCHAR Others[4];
 } IDE_REGISTERS_3, *PIDE_REGISTERS_3;
+#endif
 
 //
 // Device Extension Device Flags
@@ -163,6 +195,31 @@ typedef struct _MODE_PARAMETER_HEADER_10 {
 // ATAPI register definition
 //
 
+#if defined(SARCH_PC98)
+typedef struct _ATAPI_REGISTERS_1 {
+    UCHAR Data;
+    UCHAR Gap0;
+    UCHAR Gap1;
+    UCHAR Gap2;
+    UCHAR InterruptReason;
+    UCHAR Gap3;
+    UCHAR Unused1;
+    UCHAR Gap4;
+    UCHAR ByteCountLow;
+    UCHAR Gap5;
+    UCHAR ByteCountHigh;
+    UCHAR Gap6;
+    UCHAR DriveSelect;
+    UCHAR Gap7;
+    UCHAR Command;
+} ATAPI_REGISTERS_1, *PATAPI_REGISTERS_1;
+
+typedef struct _ATAPI_REGISTERS_2 {
+    UCHAR AlternateStatus;
+    UCHAR Gap0;
+    UCHAR DriveAddress;
+} ATAPI_REGISTERS_2, *PATAPI_REGISTERS_2;
+#else
 typedef struct _ATAPI_REGISTERS_1 {
     USHORT Data;
     UCHAR InterruptReason;
@@ -177,6 +234,7 @@ typedef struct _ATAPI_REGISTERS_2 {
     UCHAR AlternateStatus;
     UCHAR DriveAddress;
 } ATAPI_REGISTERS_2, *PATAPI_REGISTERS_2;
+#endif
 
 //
 // ATAPI interrupt reasons
@@ -337,12 +395,12 @@ NATIVE_MODE_CONTROLLER_INFORMATION const NativeModeAdapters[] = {
 
 
 #define ReadBuffer(BaseIoAddress, Buffer, Count) \
-    ScsiPortReadPortBufferUshort(&BaseIoAddress->Data, \
+    ScsiPortReadPortBufferUshort((PUSHORT)&BaseIoAddress->Data, \
                                  Buffer, \
                                  Count);
 
 #define WriteBuffer(BaseIoAddress, Buffer, Count) \
-    ScsiPortWritePortBufferUshort(&BaseIoAddress->Data, \
+    ScsiPortWritePortBufferUshort((PUSHORT)&BaseIoAddress->Data, \
                                   Buffer, \
                                   Count);
 
@@ -425,7 +483,11 @@ NATIVE_MODE_CONTROLLER_INFORMATION const NativeModeAdapters[] = {
     while ((ScsiPortReadPortUchar(&BaseIoAddress->Command) & IDE_STATUS_BUSY) && i--)\
         ScsiPortStallExecution(30);\
     ScsiPortWritePortUchar(&BaseIoAddress->DriveSelect,(UCHAR)((DeviceNumber << 4) | 0xA0)); \
-    WaitOnBusy( ((PIDE_REGISTERS_2)((PUCHAR)BaseIoAddress + 0x206)), statusByte); \
+/* if defined(SARCH_PC98) */ \
+    WaitOnBusy( ((PIDE_REGISTERS_2)((PUCHAR)BaseIoAddress + 0x10C)), statusByte); \
+/* else */ \
+    /* WaitOnBusy( ((PIDE_REGISTERS_2)((PUCHAR)BaseIoAddress + 0x206)), statusByte); */ \
+/* endif */ \
     ScsiPortStallExecution(500);\
 }
 
