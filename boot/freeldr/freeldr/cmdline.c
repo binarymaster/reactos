@@ -73,6 +73,20 @@ CmdLineParse(IN PCSTR CmdLine)
                                    sizeof("timeout=") - sizeof(ANSI_NULL));
     }
 
+    /* Get boot path */
+    Setting = strstr(CmdLine, "bootpath=");
+    if (Setting)
+    {
+        /* Check if there are more command-line parameters following */
+        Setting += sizeof("bootpath=") - sizeof(ANSI_NULL);
+        End = strstr(Setting, " ");
+        Length = (End ? (End - Setting) : strlen(Setting));
+
+        /* Override boot path */
+        RtlStringCbCopyNA(FrLdrBootPath, sizeof(FrLdrBootPath), Setting, Length);
+        CmdLineInfo.DefaultOs = DefaultOs;
+    }
+
     /* Get default OS */
     Setting = strstr(CmdLine, "defaultos=");
     if (Setting)

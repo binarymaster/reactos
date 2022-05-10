@@ -54,6 +54,17 @@
 #define MB_INFO_FLAG_APM_TABLE            HEX(00000400)
 #define MB_INFO_FLAG_GRAPHICS_TABLE        HEX(00000800)
 
+/* Flags to be set in the ’flags’ member of the multiboot info structure. */
+
+/* is there basic lower/upper memory information? */
+#define MULTIBOOT_INFO_MEMORY                   0x00000001
+/* is there a boot device set? */
+#define MULTIBOOT_INFO_BOOTDEV                  0x00000002
+/* is the command-line defined? */
+#define MULTIBOOT_INFO_CMDLINE                  0x00000004
+/* are there modules to do something with? */
+#define MULTIBOOT_INFO_MODS                     0x00000008
+
 #ifndef __ASM__
 /* Do not include here in boot.S. */
 
@@ -123,5 +134,19 @@ typedef struct memory_map
   unsigned long type;
   unsigned long reserved;
 } memory_map_t;
+
+struct multiboot_mod_list
+{
+  /* the memory used goes from bytes ’mod_start’ to ’mod_end-1’ inclusive */
+  unsigned long mod_start;
+  unsigned long mod_end;
+
+  /* Module command line */
+  unsigned long cmdline;
+
+  /* padding to take it to 16 bytes (must be zero) */
+  unsigned long pad;
+};
+typedef struct multiboot_mod_list multiboot_module_t;
 
 #endif /* ! __ASM__ */

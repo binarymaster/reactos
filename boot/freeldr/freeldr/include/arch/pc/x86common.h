@@ -49,15 +49,18 @@
 #define BSS_PnpResult            (BSS_START + 104)
 #define BSS_BootDrive            (BSS_START + 108) // 1 byte
 #define BSS_BootPartition        (BSS_START + 109) // 1 byte
+#define BSS_CallFarSegment       BSS_PxeBufferSegment //reuse address
+#define BSS_CallFarOffset        BSS_PxeBufferOffset //reuse address
 
 
 /* Realmode function IDs */
 #define FNID_Int386 0
-#define FNID_Reboot 1
-#define FNID_Relocator16Boot 2
-#define FNID_PxeCallApi 3
-#define FNID_PnpBiosGetDeviceNodeCount  4
-#define FNID_PnpBiosGetDeviceNode       5
+#define FNID_CallFar16 1
+#define FNID_Reboot 2
+#define FNID_Relocator16Boot 3
+#define FNID_PxeCallApi 4
+#define FNID_PnpBiosGetDeviceNodeCount  5
+#define FNID_PnpBiosGetDeviceNode       6
 
 /* Flag Masks */
 #define CR0_PE_SET    HEX(00000001)    /* OR this value with CR0 to enable pmode */

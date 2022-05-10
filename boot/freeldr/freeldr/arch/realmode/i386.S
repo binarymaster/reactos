@@ -142,6 +142,7 @@ pm_entrypoint:
 
 CallbackTable:
     .word Int386
+    .word CallFar16
     .word Reboot
     .word Relocator16Boot
     .word PxeCallApi
@@ -197,6 +198,7 @@ rmode_idtptr:
     .long 0             /* Base Address */
 
 #include "int386.inc"
+#include "callfar16.inc"
 #if defined(SARCH_PC98)
 #include "helpers_pc98.inc"
 #else

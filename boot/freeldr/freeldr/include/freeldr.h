@@ -110,6 +110,9 @@
 #elif defined(SARCH_XBOX)
 #include <arch/pc/machpc.h>
 #include <arch/i386/machxbox.h>
+#elif defined(SARCH_SFI)
+#include <arch/pc/machpc.h>
+#include <arch/sfi/machsfi.h>
 #else
 #include <arch/pc/machpc.h>
 #endif

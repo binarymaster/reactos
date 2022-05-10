@@ -30,15 +30,6 @@ DBG_DEFAULT_CHANNEL(FILESYSTEM);
 #define TAG_DEVICE_NAME 'NDsF'
 #define TAG_DEVICE 'vDsF'
 
-typedef struct tagFILEDATA
-{
-    ULONG DeviceId;
-    ULONG ReferenceCount;
-    const DEVVTBL* FuncTable;
-    const DEVVTBL* FileFuncTable;
-    VOID* Specific;
-} FILEDATA;
-
 typedef struct tagDEVICE
 {
     LIST_ENTRY ListEntry;
@@ -47,6 +38,16 @@ typedef struct tagDEVICE
     ULONG DeviceId;
     ULONG ReferenceCount;
 } DEVICE;
+
+typedef struct tagFILEDATA
+{
+    ULONG DeviceId;
+    DEVICE* Device;
+    ULONG ReferenceCount;
+    const DEVVTBL* FuncTable;
+    const DEVVTBL* FileFuncTable;
+    VOID* Specific;
+} FILEDATA;
 
 static FILEDATA FileData[MAX_FDS];
 static LIST_ENTRY DeviceListHead;
@@ -115,8 +116,12 @@ ARC_STATUS ArcOpen(CHAR* Path, OPENMODE OpenMode, ULONG* FileId)
     while (pEntry != &DeviceListHead)
     {
         pDevice = CONTAINING_RECORD(pEntry, DEVICE, ListEntry);
-        if (strncmp(pDevice->Prefix, DeviceName, Length) == 0)
+        if ((strlen(pDevice->Prefix) == Length) && (strncmp(pDevice->Prefix, DeviceName, Length) == 0))
         {
+            /* Free DeviceName if it was duplicated */
+            if (DeviceName != Path) FrLdrTempFree(DeviceName, TAG_DEVICE_NAME);
+            DeviceName = NULL;
+
             /* OK, device found. It is already opened? */
             if (pDevice->ReferenceCount == 0)
             {
@@ -130,6 +135,7 @@ ARC_STATUS ArcOpen(CHAR* Path, OPENMODE OpenMode, ULONG* FileId)
                     return EMFILE;
 
                 /* Try to open the device */
+                FileData[DeviceId].Device = pDevice;
                 FileData[DeviceId].FuncTable = pDevice->FuncTable;
                 Status = pDevice->FuncTable->Open(pDevice->Prefix, DeviceOpenMode, &DeviceId);
                 if (Status != ESUCCESS)
@@ -182,6 +188,7 @@ ARC_STATUS ArcOpen(CHAR* Path, OPENMODE OpenMode, ULONG* FileId)
         }
         pEntry = pEntry->Flink;
     }
+    if ((DeviceName != NULL) && (DeviceName != Path)) FrLdrTempFree(DeviceName, TAG_DEVICE_NAME);
     if (pEntry == &DeviceListHead)
         return ENODEV;
 
@@ -217,15 +224,24 @@ ARC_STATUS ArcOpen(CHAR* Path, OPENMODE OpenMode, ULONG* FileId)
 
 ARC_STATUS ArcClose(ULONG FileId)
 {
-    ARC_STATUS Status;
+    ARC_STATUS Status = ESUCCESS;
 
     if (FileId >= MAX_FDS || !FileData[FileId].FuncTable)
         return EBADF;
 
-    Status = FileData[FileId].FuncTable->Close(FileId);
+    if (FileData[FileId].Device->ReferenceCount > 0)
+	{
+		FileData[FileId].Device->ReferenceCount --;
+	}
+
+	if (FileData[FileId].Device->ReferenceCount == 0)
+	{
+		Status = FileData[FileId].FuncTable->Close(FileId);
+	}
 
     if (Status == ESUCCESS)
     {
+        FileData[FileId].Device = NULL;
         FileData[FileId].FuncTable = NULL;
         FileData[FileId].Specific = NULL;
         FileData[FileId].DeviceId = -1;
@@ -330,7 +346,7 @@ ULONG FsGetNumPathParts(PCSTR Path)
     size_t i;
     size_t len;
     ULONG  num;
-
+    
     len = strlen(Path);
 
     for (i = 0, num = 0; i < len; i++)

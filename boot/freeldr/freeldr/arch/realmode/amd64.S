@@ -362,6 +362,7 @@ LongModeEntryPoint:
 
 CallbackTable:
     .word Int386
+    .word CallFar16
     .word Reboot
     .word Relocator16Boot
     .word PxeCallApi
@@ -374,6 +375,7 @@ stack16:
 
 
 #include "int386.inc"
+#include "callfar16.inc"
 #include "helpers.inc"
 #include "pxe.inc"
 #include "pnp.inc"

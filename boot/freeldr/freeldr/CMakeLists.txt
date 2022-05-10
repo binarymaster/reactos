@@ -92,6 +92,7 @@ if(ARCH STREQUAL "i386")
         arch/i386/drvmap.S
         arch/i386/entry.S
         arch/i386/int386.S
+        arch/i386/callfar16.S
         arch/i386/pnpbios.S
         arch/i386/i386trap.S
         arch/i386/linux.S)
@@ -146,6 +147,28 @@ if(ARCH STREQUAL "i386")
             arch/i386/pc98/pc98mem.c
             arch/i386/pc98/pc98rtc.c
             arch/i386/pc98/pc98video.c)
+    elseif(SARCH STREQUAL "sfi")
+        list(APPEND FREELDR_ARC_SOURCE
+            arch/i386/pc/pcdisk.c       # hwdisk.c depends on it
+            arch/i386/pc/pcmem.c        # hwacpi.c/machsfi.c depends on it
+            arch/i386/pc/pccons.c       # machsfi.c depends on it
+            arch/i386/pc/pcvideo.c      # machsfi.c depends on it
+            arch/i386/sfi/machsfi.c
+            arch/i386/sfi/sfitable.c
+            arch/i386/sfi/delay.c
+            arch/drivers/SfiMcfgPci/SfiMcfgPci.c
+            arch/drivers/SdMmcPciHci/SdMmcPciHcIsd.c
+            arch/drivers/SdMmcPciHci/SdMmcPciHci.c
+            arch/drivers/SdMmcPciHci/SdDevice.c
+            arch/drivers/SdMmcPciHci/EmmcDevice.c
+            arch/drivers/Sd/SdIsd.c
+            arch/drivers/Sd/SdBlockIo.c
+            arch/drivers/Emmc/EmmcIsd.c
+            arch/drivers/Emmc/EmmcBlockIo.c
+            arch/drivers/MrstKeypad/MrstKeypad.c
+            arch/drivers/blockiodisk.c
+            disk/arcpartition.c
+            lib/isdsupp.c)
     else()
         list(APPEND FREELDR_ARC_SOURCE
             arch/i386/pc/machpc.c
