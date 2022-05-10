@@ -74,9 +74,16 @@ Licence:
 #define RETRY_WDMA                      2
 #define RETRY_PIO                       3
 
-
+#if defined(__REACTOS__) && defined(SARCH_PC98)
+#define	IO_WD1	        0x640		/* Primary Fixed Disk Controller */
+#define	IO_WD2	        0x641		/* Secondary  == Primary*/	
+#define ATA_ALTOFFSET	0x10C	/* 0x74C = 0x640+0x10C */
+#else
 #define	IO_WD1	        0x1F0		/* Primary Fixed Disk Controller */
 #define	IO_WD2	        0x170		/* Secondary Fixed Disk Controller */
+#define ATA_ALTOFFSET			0x206	/* alternate registers offset */
+#endif
+
 #define IP_PC98_BANK    0x432
 #define	IO_FLOPPY_INT	0x3F6		/* AltStatus inside Floppy I/O range */
 
@@ -84,7 +91,6 @@ Licence:
 
 #define ATA_BM_OFFSET1			0x08
 #define ATA_IOSIZE			0x08
-#define ATA_ALTOFFSET			0x206	/* alternate registers offset */
 #define ATA_PCCARD_ALTOFFSET		0x0e	/* do for PCCARD devices */
 #define ATA_ALTIOSIZE			0x01	/* alternate registers size */
 #define ATA_BMIOSIZE			0x20

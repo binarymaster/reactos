@@ -163,6 +163,17 @@ DbgPrint(
 
 #pragma pack(push, 1)
 
+#if 1
+#ifdef KdPrint
+#undef KdPrint
+#endif
+#ifdef KdPrint3
+#undef KdPrint3
+#endif
+#define KdPrint3(_x_) DbgPrint _x_
+#define KdPrint(_x_) DbgPrint _x_
+#endif
+
 typedef union _IDE_REGISTERS_1 {
     struct _o {
         UCHAR Data;
@@ -232,6 +243,7 @@ typedef union _IDE_REGISTERS_2 {
 //
 // Device Extension Device Flags
 //
+#define IDX_IO3                     (IDX_IO2_o+IDX_IO2_o_SZ)
 
 #define DFLAGS_DEVICE_PRESENT        0x0001    // Indicates that some device is present.
 #define DFLAGS_ATAPI_DEVICE          0x0002    // Indicates whether ATAPI commands can be used.
@@ -436,7 +448,8 @@ typedef struct _MODE_PARAMETER_HEADER_10 {
 // IDE drive select/head definitions
 //
 
-#define IDE_DRIVE_SELECT             0xA0
+//#define IDE_DRIVE_SELECT             0xA0
+#define IDE_DRIVE_SELECT             0x0
 #define IDE_DRIVE_1                  0x00
 #define IDE_DRIVE_2                  0x10
 #define IDE_DRIVE_SELECT_1           (IDE_DRIVE_SELECT | IDE_DRIVE_1)
