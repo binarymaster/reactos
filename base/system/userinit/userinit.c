@@ -221,46 +221,6 @@ StartProcess(
 }
 
 static BOOL
-StartProcessWait(
-    IN LPCWSTR CommandLine)
-{
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-    WCHAR ExpandedCmdLine[MAX_PATH];
-
-    TRACE("(%s)\n", debugstr_w(CommandLine));
-
-    ExpandEnvironmentStringsW(CommandLine, ExpandedCmdLine, ARRAYSIZE(ExpandedCmdLine));
-
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_SHOWNORMAL;
-    ZeroMemory(&pi, sizeof(pi));
-
-    if (!CreateProcessW(NULL,
-                        ExpandedCmdLine,
-                        NULL,
-                        NULL,
-                        FALSE,
-                        NORMAL_PRIORITY_CLASS,
-                        NULL,
-                        NULL,
-                        &si,
-                        &pi))
-    {
-        WARN("CreateProcessW() failed with error %lu\n", GetLastError());
-        return FALSE;
-    }
-
-    WaitForSingleObject(pi.hProcess, INFINITE);
-
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-    return TRUE;
-}
-
-static BOOL
 StartShell(VOID)
 {
     WCHAR Shell[MAX_PATH];
@@ -702,7 +662,6 @@ wWinMain(IN HINSTANCE hInst,
     hInstance = hInst;
 
     bIsLiveCD = IsLiveCD();
-    StartProcessWait(L"cmd /C \\extras\\startup.cmd");
 
 Restart:
     SetUserSettings();
