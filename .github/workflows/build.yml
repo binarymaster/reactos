@@ -39,6 +39,7 @@ jobs:
         echo "M4=${{github.workspace}}\bin\m4.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Add build directory to exclusions
       run: |
+        net stop mspdbsrv
         Add-MpPreference -ExclusionPath ${{github.workspace}}\build
     - name: Activate VS cmd (x86)
       if: ${{ matrix.arch == 'i386' }}
