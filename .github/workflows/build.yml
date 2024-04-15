@@ -37,12 +37,12 @@ jobs:
         echo "${{github.workspace}}\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "BISON_PKGDATADIR=${{github.workspace}}\bin\share\bison" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         echo "M4=${{github.workspace}}\bin\m4.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    - name: Disable antivirus
+    - name: Analyse PDB
       run: |
-        powershell Start-Process -PassThru -Wait PowerShell -ArgumentList "'-Command Set-MpPreference -DisableArchiveScanning \$true'"
-        powershell Start-Process -PassThru -Wait PowerShell -ArgumentList "'-Command Set-MpPreference -DisableBehaviorMonitoring \$true'"
-        powershell Start-Process -PassThru -Wait PowerShell -ArgumentList "'-Command Set-MpPreference -DisableRealtimeMonitoring \$true'"
-        powershell Start-Process -PassThru -Wait PowerShell -ArgumentList "'-Command Add-MpPreference -ExclusionPath $GITHUB_WORKSPACE'"
+        curl -O https://download.sysinternals.com/files/Handle.zip
+        7z x Handle.zip -O${{github.workspace}}\bin
+        handle64 /accepteula .bin
+        handle64 .pdb
     - name: Activate VS cmd (x86)
       if: ${{ matrix.arch == 'i386' }}
       uses: ilammy/msvc-dev-cmd@v1
