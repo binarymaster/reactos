@@ -56,6 +56,7 @@ typedef enum _CMBATT_EXTENSION_TYPE
 #define ACPI_STA_SHOW_UI            0x04
 #define ACPI_STA_FUNCTIONAL         0x08
 #define ACPI_STA_BATTERY_PRESENT    0x10
+#define ACPI_STA_BATTERY_PRESENT_V2 0xF
 
 #define ACPI_BATT_NOTIFY_STATUS     0x80
 #define ACPI_BATT_NOTIFY_INFO       0x81
@@ -77,6 +78,8 @@ typedef struct _ACPI_BST_DATA
 
 #define ACPI_BATT_POWER_UNIT_WATTS  0x0
 #define ACPI_BATT_POWER_UNIT_AMPS   0x1
+
+#define CONVERT_MAH_TO_MWH(mA, Volts) ((mA * Volts + 500) / 1000)
 
 typedef struct _ACPI_BIF_DATA
 {

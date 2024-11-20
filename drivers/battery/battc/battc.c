@@ -81,6 +81,7 @@ BatteryClassStatusNotify(PVOID ClassData)
     PBATTERY_CLASS_DATA BattClass;
     PBATTERY_WAIT_STATUS BattWait;
     BATTERY_STATUS BattStatus;
+    ULONG Tag;
     NTSTATUS Status;
 
     DPRINT("Received battery status notification from %p\n", ClassData);
@@ -99,7 +100,14 @@ BatteryClassStatusNotify(PVOID ClassData)
     {
         case EVENT_BATTERY_TAG:
             ExReleaseFastMutex(&BattClass->Mutex);
-            DPRINT1("Waiting for battery is UNIMPLEMENTED!\n");
+            Status = BattClass->MiniportInfo.QueryTag(BattClass->MiniportInfo.Context,
+                                                      &Tag);
+            if (!NT_SUCCESS(Status))
+                return Status;
+
+            ExAcquireFastMutex(&BattClass->Mutex);
+            KeSetEvent(&BattClass->WaitEvent, IO_NO_INCREMENT, FALSE);
+            ExReleaseFastMutex(&BattClass->Mutex);
             break;
 
         case EVENT_BATTERY_STATUS:
@@ -164,7 +172,7 @@ BatteryClassInitializeDevice(PBATTERY_MINIPORT_INFO MiniportInfo,
                                            &BattClass->InterfaceName);
         if (NT_SUCCESS(Status))
         {
-            DPRINT("Initialized battery interface: %wZ\n", &BattClass->InterfaceName);
+            DPRINT1("Initialized battery interface: %wZ\n", &BattClass->InterfaceName);
             Status = IoSetDeviceInterfaceState(&BattClass->InterfaceName, TRUE);
             if (Status == STATUS_OBJECT_NAME_EXISTS)
             {
@@ -223,7 +231,7 @@ BatteryClassIoctl(PVOID ClassData,
 
             WaitTime = IrpSp->Parameters.DeviceIoControl.InputBufferLength == sizeof(ULONG) ? *(PULONG)Irp->AssociatedIrp.SystemBuffer : 0;
 
-            Timeout.QuadPart = Int32x32To64(WaitTime, -1000);
+            Timeout.QuadPart = Int32x32To64(WaitTime, -10000);
 
             Status = BattClass->MiniportInfo.QueryTag(BattClass->MiniportInfo.Context,
                                                       (PULONG)Irp->AssociatedIrp.SystemBuffer);
@@ -272,7 +280,7 @@ BatteryClassIoctl(PVOID ClassData,
 
             BattWait = *(PBATTERY_WAIT_STATUS)Irp->AssociatedIrp.SystemBuffer;
 
-            Timeout.QuadPart = Int32x32To64(BattWait.Timeout, -1000);
+            Timeout.QuadPart = Int32x32To64(BattWait.Timeout, -10000);
 
             BattStatus = Irp->AssociatedIrp.SystemBuffer;
             Status = BattClass->MiniportInfo.QueryStatus(BattClass->MiniportInfo.Context,

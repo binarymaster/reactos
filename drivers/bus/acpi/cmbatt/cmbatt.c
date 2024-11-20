@@ -275,10 +275,12 @@ CmBattUnload(IN PDRIVER_OBJECT DriverObject)
 
 NTSTATUS
 NTAPI
-CmBattVerifyStaticInfo(PCMBATT_DEVICE_EXTENSION DeviceExtension,
-                       ULONG BatteryTag)
+CmBattVerifyStaticInfo(
+    _Inout_ PCMBATT_DEVICE_EXTENSION DeviceExtension,
+    _In_ ULONG BatteryTag)
 {
     ACPI_BIF_DATA BifData;
+    ULONG DesignVoltage;
     PBATTERY_INFORMATION Info = &DeviceExtension->BatteryInformation;
     NTSTATUS Status;
 
@@ -292,16 +294,73 @@ CmBattVerifyStaticInfo(PCMBATT_DEVICE_EXTENSION DeviceExtension,
         // FIXME: take from _BIX method: Info->CycleCount
         DeviceExtension->BifData = BifData;
 
-        if (BifData.PowerUnit == 1)
+        /* Check if the power stats are reported in ampere or watts */
+        if (BifData.PowerUnit == ACPI_BATT_POWER_UNIT_AMPS)
         {
-            DPRINT1("FIXME: need to convert mAh into mWh\n");
-            Info->DesignedCapacity = BATTERY_UNKNOWN_CAPACITY;
-            Info->FullChargedCapacity = BATTERY_UNKNOWN_CAPACITY;
-            Info->DefaultAlert1 = BATTERY_UNKNOWN_CAPACITY;
-            Info->DefaultAlert2 = BATTERY_UNKNOWN_CAPACITY;
+            /*
+             * We have got power stats in milli-ampere but ReactOS expects the values
+             * to be reported in milli-watts, so we have to convert them.
+             * In order to do so we must expect the design voltage of the battery
+             * is not unknown.
+             */
+            DesignVoltage = DeviceExtension->BifData.DesignVoltage;
+            if ((DesignVoltage != BATTERY_UNKNOWN_VOLTAGE) && (DesignVoltage))
+            {
+                /* Convert the design capacity */
+                if (BifData.DesignCapacity != BATTERY_UNKNOWN_CAPACITY)
+                {
+                    Info->DesignedCapacity = CONVERT_MAH_TO_MWH(BifData.DesignCapacity, DesignVoltage);
+                }
+                else
+                {
+                    Info->DesignedCapacity = BATTERY_UNKNOWN_CAPACITY;
+                }
+
+                /* Convert the full charged capacity */
+                if (BifData.LastFullCapacity != BATTERY_UNKNOWN_CAPACITY)
+                {
+                    Info->FullChargedCapacity = CONVERT_MAH_TO_MWH(BifData.LastFullCapacity, DesignVoltage);
+                }
+                else
+                {
+                    Info->FullChargedCapacity = BATTERY_UNKNOWN_CAPACITY;
+                }
+
+                /* Convert the low capacity alarm (DefaultAlert1) */
+                if (BifData.DesignCapacityLow != BATTERY_UNKNOWN_CAPACITY)
+                {
+                    Info->DefaultAlert1 = CONVERT_MAH_TO_MWH(BifData.DesignCapacityLow, DesignVoltage);
+                }
+                else
+                {
+                    Info->DefaultAlert1 = BATTERY_UNKNOWN_CAPACITY;
+                }
+
+                /* Convert the designed capacity warning alarm (DefaultAlert2) */
+                if (BifData.DesignCapacityWarning != BATTERY_UNKNOWN_CAPACITY)
+                {
+                    Info->DefaultAlert2 = CONVERT_MAH_TO_MWH(BifData.DesignCapacityWarning, DesignVoltage);
+                }
+                else
+                {
+                    Info->DefaultAlert2 = BATTERY_UNKNOWN_CAPACITY;
+                }
+            }
+            else
+            {
+                /*
+                 * Without knowing the nominal designed voltage of the battery
+                 * we cannot determine the power consumption of this battery.
+                 */
+                Info->DesignedCapacity = BATTERY_UNKNOWN_CAPACITY;
+                Info->FullChargedCapacity = BATTERY_UNKNOWN_CAPACITY;
+                Info->DefaultAlert1 = BATTERY_UNKNOWN_CAPACITY;
+                Info->DefaultAlert2 = BATTERY_UNKNOWN_CAPACITY;
+            }
         }
         else
         {
+            /* The stats are in milli-watts, use them directly */
             Info->DesignedCapacity = BifData.DesignCapacity;
             Info->FullChargedCapacity = BifData.LastFullCapacity;
             Info->DefaultAlert1 = BifData.DesignCapacityLow;
@@ -582,8 +641,13 @@ CmBattQueryTag(IN PCMBATT_DEVICE_EXTENSION DeviceExtension,
     Status = CmBattGetStaData(PdoDevice, &StaData);
     if (NT_SUCCESS(Status))
     {
-        /* Is a battery present? */
-        if (StaData & ACPI_STA_BATTERY_PRESENT)
+        /*
+         * Check if _STA method has returned us the battery state as being
+         * present. On some machines the returned _STA element might be 0xF
+         * which is still valid.
+         */
+        if ((StaData & ACPI_STA_BATTERY_PRESENT) ||
+            (StaData & ACPI_STA_BATTERY_PRESENT_V2))
         {
             /* Do we not have a tag yet? */
             if (DeviceExtension->Tag == BATTERY_TAG_INVALID)
@@ -939,7 +1003,7 @@ CmBattGetBatteryStatus(IN PCMBATT_DEVICE_EXTENSION DeviceExtension,
             }
         }
     }
-    else if ((DesignVoltage != CM_UNKNOWN_VALUE) && (DesignVoltage))
+    else if ((DesignVoltage != CM_UNKNOWN_VALUE) && (DesignVoltage)) // Same as doing DeviceExtension->BifData.PowerUnit == ACPI_BATT_POWER_UNIT_AMPS
     {
         /* We have voltage data, what about capacity? */
         if (RemainingCapacity == CM_UNKNOWN_VALUE)

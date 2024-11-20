@@ -27,7 +27,7 @@ BatteryIoctl(IN ULONG IoControlCode,
     NTSTATUS Status;
     PIRP Irp;
     PAGED_CODE();
-    if (CompBattDebug & 0x100) DbgPrint("CompBatt: ENTERING BatteryIoctl\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: ENTERING BatteryIoctl\n");
 
     /* Initialize the event and IRP */
     KeInitializeEvent(&Event, SynchronizationEvent, 0);
@@ -52,16 +52,16 @@ BatteryIoctl(IN ULONG IoControlCode,
         }
 
         /* Print failure */
-        if (!(NT_SUCCESS(Status)) && (CompBattDebug & 8))
+        if (!(NT_SUCCESS(Status)) && (CompBattDebug & COMPBATT_DEBUG_ERR))
             DbgPrint("BatteryIoctl: Irp failed - %x\n", Status);
 
         /* Done */
-        if (CompBattDebug & 0x100) DbgPrint("CompBatt: EXITING BatteryIoctl\n");
+        if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: EXITING BatteryIoctl\n");
     }
     else
     {
         /* Out of memory */
-        if (CompBattDebug & 8) DbgPrint("BatteryIoctl: couldn't create Irp\n");
+        if (CompBattDebug & COMPBATT_DEBUG_ERR) DbgPrint("BatteryIoctl: couldn't create Irp\n");
         Status = STATUS_INSUFFICIENT_RESOURCES;
     }
 

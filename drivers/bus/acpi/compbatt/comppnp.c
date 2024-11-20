@@ -20,7 +20,7 @@ CompBattPowerDispatch(IN PDEVICE_OBJECT DeviceObject,
                       IN PIRP Irp)
 {
     PCOMPBATT_DEVICE_EXTENSION DeviceExtension = DeviceObject->DeviceExtension;
-    if (CompBattDebug & 1) DbgPrint("CompBatt: PowerDispatch received power IRP.\n");
+    if (CompBattDebug & COMPBATT_DEBUG_WARN) DbgPrint("CompBatt: PowerDispatch received power IRP.\n");
 
     /* Start the next IRP */
     PoStartNextPowerIrp(Irp);
@@ -37,7 +37,7 @@ RemoveBatteryFromList(IN PCUNICODE_STRING BatteryName,
 {
     PLIST_ENTRY ListHead, NextEntry;
     PCOMPBATT_BATTERY_DATA BatteryData;
-    if (CompBattDebug & 1)
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT)
         DbgPrint("CompBatt: ENTERING RemoveBatteryFromList\n");
 
     /* Loop the battery list */
@@ -68,7 +68,7 @@ RemoveBatteryFromList(IN PCUNICODE_STRING BatteryName,
 
     /* Done */
     ExReleaseFastMutex(&DeviceExtension->Lock);
-    if (CompBattDebug & 1) DbgPrint("CompBatt: EXITING RemoveBatteryFromList\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: EXITING RemoveBatteryFromList\n");
     return NULL;
 }
 
@@ -80,7 +80,7 @@ IsBatteryAlreadyOnList(IN PCUNICODE_STRING BatteryName,
     PLIST_ENTRY ListHead, NextEntry;
     PCOMPBATT_BATTERY_DATA BatteryData;
     BOOLEAN Found = FALSE;
-    if (CompBattDebug & 1)
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT)
         DbgPrint("CompBatt: ENTERING IsBatteryAlreadyOnList\n");
 
     /* Loop the battery list */
@@ -104,7 +104,7 @@ IsBatteryAlreadyOnList(IN PCUNICODE_STRING BatteryName,
 
     /* Release the lock and return search status */
     ExReleaseFastMutex(&DeviceExtension->Lock);
-    if (CompBattDebug & 1) DbgPrint("CompBatt: EXITING IsBatteryAlreadyOnList\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: EXITING IsBatteryAlreadyOnList\n");
     return Found;
 }
 
@@ -119,7 +119,7 @@ CompBattAddNewBattery(IN PUNICODE_STRING BatteryName,
     PIO_STACK_LOCATION IoStackLocation;
     PFILE_OBJECT FileObject;
     PAGED_CODE();
-    if (CompBattDebug & 1)
+    if (CompBattDebug & COMPBATT_DEBUG_WARN)
         DbgPrint("CompBatt: ENTERING AddNewBattery \"%w\" \n", BatteryName->Buffer);
 
     /* Is this a new battery? */
@@ -165,7 +165,6 @@ CompBattAddNewBattery(IN PUNICODE_STRING BatteryName,
                     /* Set IRP data */
                     IoSetNextIrpStackLocation(Irp);
                     Irp->IoStatus.Status = STATUS_DEVICE_NOT_CONNECTED;
-                    BatteryData->WaitFlag = 0;
 
                     /* Insert this battery in the list */
                     ExAcquireFastMutex(&DeviceExtension->Lock);
@@ -174,25 +173,25 @@ CompBattAddNewBattery(IN PUNICODE_STRING BatteryName,
                     ExReleaseFastMutex(&DeviceExtension->Lock);
 
                     /* Initialize the work item and delete lock */
-                    IoInitializeRemoveLock(&BatteryData->RemoveLock, 0, 0, 0);
+                    IoInitializeRemoveLock(&BatteryData->RemoveLock, COMPBATT_TAG, 0, 0);
                     ExInitializeWorkItem(&BatteryData->WorkItem,
                                          (PVOID)CompBattMonitorIrpCompleteWorker,
                                          BatteryData);
 
                     /* Setup the IRP work entry */
-                    CompBattMonitorIrpComplete(BatteryData->DeviceObject, Irp, 0);
+                    CompBattMonitorIrpComplete(BatteryData->DeviceObject, Irp, NULL);
                     Status = STATUS_SUCCESS;
                 }
                 else
                 {
                     /* Fail, no memory */
-                    if (CompBattDebug & 8)
+                    if (CompBattDebug & COMPBATT_DEBUG_ERR)
                         DbgPrint("CompBatt: Couldn't allocate new battery Irp\n");
                     Status = STATUS_INSUFFICIENT_RESOURCES;
                     ObDereferenceObject(BatteryData->DeviceObject);
                 }
             }
-            else if (CompBattDebug & 8)
+            else if (CompBattDebug & COMPBATT_DEBUG_ERR)
             {
                 /* Fail */
                 DbgPrint("CompBattAddNewBattery: Failed to get device Object. status = %lx\n",
@@ -208,24 +207,24 @@ CompBattAddNewBattery(IN PUNICODE_STRING BatteryName,
         else
         {
             /* Fail, no memory */
-            if (CompBattDebug & 8)
+            if (CompBattDebug & COMPBATT_DEBUG_ERR)
                 DbgPrint("CompBatt: Couldn't allocate new battery node\n");
             Status = STATUS_INSUFFICIENT_RESOURCES;
         }
     }
 
     /* We're done */
-    if (CompBattDebug & 1) DbgPrint("CompBatt: EXITING AddNewBattery\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: EXITING AddNewBattery\n");
     return Status;
 }
 
 NTSTATUS
 NTAPI
-CompBattRemoveBattery(IN PCUNICODE_STRING BatteryName,
+CompBattRemoveBattery(IN PUNICODE_STRING BatteryName,
                       IN PCOMPBATT_DEVICE_EXTENSION DeviceExtension)
 {
     PCOMPBATT_BATTERY_DATA BatteryData;
-    if (CompBattDebug & 1) DbgPrint("CompBatt: RemoveBattery\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: RemoveBattery\n");
 
     /* Remove the entry */
     BatteryData = RemoveBatteryFromList(BatteryName, DeviceExtension);
@@ -252,7 +251,7 @@ CompBattGetBatteries(IN PCOMPBATT_DEVICE_EXTENSION DeviceExtension)
     NTSTATUS Status;
     PWCHAR LinkList;
     UNICODE_STRING LinkString;
-    if (CompBattDebug & 1) DbgPrint("CompBatt: ENTERING GetBatteries\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: ENTERING GetBatteries\n");
 
     /* Get all battery links */
     Status = IoGetDeviceInterfaces(&GUID_DEVICE_BATTERY, NULL, 0, &LinkList);
@@ -274,14 +273,14 @@ CompBattGetBatteries(IN PCOMPBATT_DEVICE_EXTENSION DeviceExtension)
         /* Parsing complete, clean up buffer */
         ExFreePool(LinkList);
     }
-    else if (CompBattDebug & 8)
+    else if (CompBattDebug & COMPBATT_DEBUG_ERR)
     {
         /* Fail */
         DbgPrint("CompBatt: Couldn't get list of batteries\n");
     }
 
     /* Done */
-    if (CompBattDebug & 1) DbgPrint("CompBatt: EXITING GetBatteries\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: EXITING GetBatteries\n");
     return Status;
 }
 
@@ -290,31 +289,31 @@ NTAPI
 CompBattPnpEventHandler(IN PDEVICE_INTERFACE_CHANGE_NOTIFICATION Notification,
                         IN PCOMPBATT_DEVICE_EXTENSION DeviceExtension)
 {
-    if (CompBattDebug & 1) DbgPrint("CompBatt: ENTERING PnpEventHandler\n");
-    if (CompBattDebug & 2) DbgPrint("CompBatt: Received device interface change notification\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: ENTERING PnpEventHandler\n");
+    if (CompBattDebug & COMPBATT_DEBUG_WARN) DbgPrint("CompBatt: Received device interface change notification\n");
 
     /* Check what happened */
     if (IsEqualGUIDAligned(&Notification->Event, &GUID_DEVICE_INTERFACE_ARRIVAL))
     {
         /* Add the new battery */
-        if (CompBattDebug & 2)
+        if (CompBattDebug & COMPBATT_DEBUG_WARN)
             DbgPrint("CompBatt: Received notification of battery arrival\n");
         CompBattAddNewBattery(Notification->SymbolicLinkName, DeviceExtension);
     }
     else if (IsEqualGUIDAligned(&Notification->Event, &GUID_DEVICE_INTERFACE_REMOVAL))
     {
         /* Don't do anything */
-        if (CompBattDebug & 2)
+        if (CompBattDebug & COMPBATT_DEBUG_WARN)
             DbgPrint("CompBatt: Received notification of battery removal\n");
     }
     else
     {
         /* Shouldn't happen */
-        if (CompBattDebug & 2) DbgPrint("CompBatt: Received unhandled PnP event\n");
+        if (CompBattDebug & COMPBATT_DEBUG_WARN) DbgPrint("CompBatt: Received unhandled PnP event\n");
     }
 
     /* Done, return success */
-    if (CompBattDebug & 1) DbgPrint("CompBatt: EXITING PnpEventHandler\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: EXITING PnpEventHandler\n");
     return STATUS_SUCCESS;
 }
 
@@ -329,7 +328,7 @@ CompBattAddDevice(IN PDRIVER_OBJECT DriverObject,
     PDEVICE_OBJECT DeviceObject;
     UNICODE_STRING SymbolicLinkName;
     BATTERY_MINIPORT_INFO MiniportInfo;
-    if (CompBattDebug & 2) DbgPrint("CompBatt: Got an AddDevice - %x\n", PdoDeviceObject);
+    if (CompBattDebug & COMPBATT_DEBUG_WARN) DbgPrint("CompBatt: Got an AddDevice - %x\n", PdoDeviceObject);
 
     /* Create the device */
     RtlInitUnicodeString(&DeviceName, L"\\Device\\CompositeBattery");
@@ -357,7 +356,7 @@ CompBattAddDevice(IN PDRIVER_OBJECT DriverObject,
     if (!DeviceExtension->AttachedDevice)
     {
         /* Fail */
-        if (CompBattDebug & 8)
+        if (CompBattDebug & COMPBATT_DEBUG_ERR)
             DbgPrint("CompBattAddDevice: Could not attach to LowerDevice.\n");
         IoDeleteDevice(DeviceObject);
         return STATUS_UNSUCCESSFUL;
@@ -409,7 +408,7 @@ CompBattPnpDispatch(IN PDEVICE_OBJECT DeviceObject,
     PIO_STACK_LOCATION IoStackLocation = IoGetCurrentIrpStackLocation(Irp);
     NTSTATUS Status;
     PCOMPBATT_DEVICE_EXTENSION DeviceExtension = DeviceObject->DeviceExtension;
-    if (CompBattDebug & 1) DbgPrint("CompBatt: ENTERING PnpDispatch\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: ENTERING PnpDispatch\n");
 
     /* Set default error */
     Status = STATUS_NOT_SUPPORTED;
@@ -430,14 +429,14 @@ CompBattPnpDispatch(IN PDEVICE_OBJECT DeviceObject,
             if (NT_SUCCESS(Status))
             {
                 /* Now go get the batteries */
-                if (CompBattDebug & 2)
+                if (CompBattDebug & COMPBATT_DEBUG_WARN)
                     DbgPrint("CompBatt: Successfully registered for PnP notification\n");
                 Status = CompBattGetBatteries(DeviceExtension);
             }
             else
             {
                 /* We failed */
-                if (CompBattDebug & 8)
+                if (CompBattDebug & COMPBATT_DEBUG_ERR)
                     DbgPrint("CompBatt: Couldn't register for PnP notification - %x\n",
                              Status);
             }
@@ -491,7 +490,7 @@ CompBattPnpDispatch(IN PDEVICE_OBJECT DeviceObject,
     }
 
     /* Release the remove lock and return status */
-    if (CompBattDebug & 1) DbgPrint("CompBatt: EXITING PnpDispatch\n");
+    if (CompBattDebug & COMPBATT_DEBUG_FUNC_ENTER_EXIT) DbgPrint("CompBatt: EXITING PnpDispatch\n");
     return Status;
 }
 
