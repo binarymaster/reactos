@@ -357,6 +357,10 @@ AcpiEvDataTableRegionSetup (
     void                    **RegionContext);
 
 ACPI_STATUS
+AcpiEvEcRegionSetup(ACPI_HANDLE Handle, UINT32 Function, void *HandlerContext, void **RegionContext);
+
+
+ACPI_STATUS
 AcpiEvDefaultRegionSetup (
     ACPI_HANDLE             Handle,
     UINT32                  Function,

@@ -458,6 +458,12 @@ AcpiEvInstallSpaceHandler (
             Setup   = AcpiEvDataTableRegionSetup;
             break;
 
+        case ACPI_ADR_SPACE_EC:
+
+            Handler = AcpiExEcSpaceHandler;
+            Setup = AcpiEvEcRegionSetup;
+            break;
+
         default:
 
             Status = AE_BAD_PARAMETER;

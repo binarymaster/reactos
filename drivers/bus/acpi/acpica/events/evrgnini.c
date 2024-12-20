@@ -721,3 +721,20 @@ AcpiEvInitializeRegion (
 
     return_ACPI_STATUS (AE_OK);
 }
+
+ACPI_STATUS
+AcpiEvEcRegionSetup(ACPI_HANDLE Handle, UINT32 Function, void *HandlerContext, void **RegionContext)
+{
+    ACPI_FUNCTION_TRACE(EvEcRegionSetup);
+
+    if (Function == ACPI_REGION_DEACTIVATE)
+    {
+        *RegionContext = NULL;
+    }
+    else
+    {
+        *RegionContext = HandlerContext;
+    }
+
+    return_ACPI_STATUS(AE_OK);
+}

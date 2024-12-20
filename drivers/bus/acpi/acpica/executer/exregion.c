@@ -618,3 +618,44 @@ AcpiExDataTableSpaceHandler (
 
     return_ACPI_STATUS (AE_OK);
 }
+
+ACPI_STATUS
+AcpiExEcSpaceHandler(
+    UINT32 Function,
+    ACPI_PHYSICAL_ADDRESS Address,
+    UINT32 BitWidth,
+    UINT64 *Value,
+    void *HandlerContext,
+    void *RegionContext)
+{
+    ACPI_DATA_TABLE_MAPPING *Mapping;
+    char *Pointer;
+
+    ACPI_FUNCTION_TRACE(ExEcSpaceHandler);
+
+    Mapping = (ACPI_DATA_TABLE_MAPPING *)RegionContext;
+    Pointer = ACPI_CAST_PTR(char, Mapping->Pointer) + (Address - ACPI_PTR_TO_PHYSADDR(Mapping->Pointer));
+
+    /*
+     * Perform the memory read or write. The BitWidth was already
+     * validated.
+     */
+    switch (Function)
+    {
+        case ACPI_READ:
+
+            memcpy(ACPI_CAST_PTR(char, Value), Pointer, ACPI_DIV_8(BitWidth));
+            break;
+
+        case ACPI_WRITE:
+
+            memcpy(Pointer, ACPI_CAST_PTR(char, Value), ACPI_DIV_8(BitWidth));
+            break;
+
+        default:
+
+            return_ACPI_STATUS(AE_BAD_PARAMETER);
+    }
+
+    return_ACPI_STATUS(AE_OK);
+}

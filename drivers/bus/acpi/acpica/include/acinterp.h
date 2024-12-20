@@ -781,4 +781,13 @@ AcpiExDataTableSpaceHandler (
     void                    *HandlerContext,
     void                    *RegionContext);
 
+ACPI_STATUS
+AcpiExEcSpaceHandler(
+    UINT32 Function,
+    ACPI_PHYSICAL_ADDRESS Address,
+    UINT32 BitWidth,
+    UINT64 *Value,
+    void *HandlerContext,
+    void *RegionContext);
+
 #endif /* __INTERP_H__ */
