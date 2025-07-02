@@ -185,6 +185,9 @@ jobs:
     - name: Build control panel applets
       if: ${{ matrix.arch == 'arm' }}
       run: cmake --build build --target dll/cpl/all
+    - name: Build bootvid
+      if: ${{ matrix.arch == 'arm' }}
+      run: cmake --build build --target drivers/base/bootvid
     - name: Build rosapps
       if: ${{ matrix.arch == 'arm' }}
       run: cmake --build build --target modules/rosapps/all
