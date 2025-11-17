@@ -1,5 +1,6 @@
 
 list(APPEND SOURCE_STATIC
+    _ismbc.c
     _mbsnbcat.c
     _mbsncat.c
     _snprintf.c

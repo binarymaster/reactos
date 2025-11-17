@@ -3,6 +3,7 @@
 #include <apitest.h>
 
 extern void func__finite(void);
+extern void func__ismbc(void);
 extern void func__isnan(void);
 extern void func__mbsnbcat(void);
 extern void func__mbsncat(void);
@@ -61,6 +62,7 @@ extern void func_splitpath(void);
 const struct test winetest_testlist[] =
 {
     { "_finite", func__finite },
+    { "_ismbc", func__ismbc },
     { "_isnan", func__isnan },
     { "_mbsnbcat", func__mbsnbcat },
     { "_mbsncat", func__mbsncat },
