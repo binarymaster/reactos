@@ -1,0 +1,82 @@
+name: Build
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    strategy:
+      matrix:
+        compiler: [gcc]
+        arch: [i386]
+        config: [Debug, Release]
+        dllver: ['0x502']
+        exclude:
+          - dllver: 0x600
+            compiler: clang
+          - dllver: 0x600
+            config: Release
+      fail-fast: false
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Get RosBE build specifics
+      id: get_rosbe_spec
+      run: |
+        gcc -march=native -Q --help=target | grep "\-march= " | awk '{print $NF}'
+        echo march-sha=$(gcc -march=native -Q --help=target | sha1sum | awk '{print $1}') >> $GITHUB_OUTPUT
+        echo git-sha=$(git ls-remote https://github.com/zefklop/RosBE.git | grep unix_amd64 | awk '{print $1}') >> $GITHUB_OUTPUT
+        wget https://gist.githubusercontent.com/zefklop/b2d6a0b470c70183e93d5285a03f5899/raw/build_rosbe_ci.sh
+    - name: Get RosBE
+      id: get_rosbe
+      uses: actions/cache@v4
+      with:
+        path: RosBE-CI
+        key: RosBE-CI-${{runner.os}}-${{steps.get_rosbe_spec.outputs.march-sha}}-${{steps.get_rosbe_spec.outputs.git-sha}}-${{hashfiles('./build_rosbe_ci.sh')}}
+    - name: Compile RosBE
+      if: ${{ steps.get_rosbe.outputs.cache-hit != 'true' }}
+      run: |
+        chmod +x build_rosbe_ci.sh
+        ./build_rosbe_ci.sh ${{github.workspace}}/RosBE-CI
+    - name: Install ccache
+      run: sudo apt install ccache
+    - name: Install LLVM
+      if: ${{ matrix.compiler == 'clang' }}
+      run: |
+        export LLVM_VERSION=13
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh $LLVM_VERSION
+        echo "D_CLANG_VERSION=-DCLANG_VERSION=$LLVM_VERSION" >> $GITHUB_ENV
+    - name: Source checkout
+      uses: actions/checkout@v4
+      with:
+        path: src
+    - name: Set up cache for ccache
+      uses: actions/cache@v4
+      with:
+        path: ccache
+        key: ccache-${{matrix.compiler}}-${{matrix.arch}}-${{matrix.config}}-${{matrix.dllver}}-${{github.sha}}
+        restore-keys: |
+          ccache-${{matrix.compiler}}-${{matrix.arch}}-${{matrix.config}}-${{matrix.dllver}}-
+    - name: Set ccache settings
+      run: |
+        echo "CCACHE_BASEDIR=${{github.workspace}}" >> $GITHUB_ENV
+        echo "CCACHE_DIR=${{github.workspace}}/ccache" >> $GITHUB_ENV
+        echo "CCACHE_MAXSIZE=1G" >> $GITHUB_ENV
+        echo "CCACHE_SLOPPINESS=time_macros" >> $GITHUB_ENV
+    - name: Ease ccache compiler check (GCC)
+      if: ${{ matrix.compiler == 'gcc' }}
+      run: echo "CCACHE_COMPILERCHECK=string:${{steps.get_rosbe_spec.outputs.git-sha}}-${{hashfiles('./build_rosbe_ci.sh')}}" >> $GITHUB_ENV
+    - name: Configure
+      run: echo 'cmake -S ${{github.workspace}}/src -B ${{github.workspace}}/build -G Ninja -DCMAKE_TOOLCHAIN_FILE:FILEPATH=toolchain-${{matrix.compiler}}.cmake -DARCH:STRING=${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.config}} -DDLL_EXPORT_VERSION=${{matrix.dllver}} -DENABLE_CCACHE=1 -DENABLE_ROSTESTS=1 -DENABLE_ROSAPPS=1 ${{env.D_CLANG_VERSION}}' | ${{github.workspace}}/RosBE-CI/RosBE.sh . 0 ${{matrix.arch}}
+    - name: Build
+      run: echo 'cmake --build ${{github.workspace}}/build -- -k0' | ${{github.workspace}}/RosBE-CI/RosBE.sh . 0 ${{matrix.arch}}
+    - name: Generate ISOs
+      run: echo 'cmake --build ${{github.workspace}}/build --target bootcd --target livecd' | ${{github.workspace}}/RosBE-CI/RosBE.sh . 0 ${{matrix.arch}}
+    - name: Print ccache statistics
+      run: ccache -s
+    - name: Upload ISOs
+      uses: actions/upload-artifact@v4
+      with:
+        name: reactos-${{matrix.compiler}}-${{matrix.arch}}-${{matrix.config}}-${{matrix.dllver}}-${{github.sha}}
+        path: |
+          build/bootcd.iso
+          build/livecd.iso
